@@ -9,7 +9,7 @@ const photoSchema = new mongoose.Schema(
     },
     eventId: {
       type: String, // matches eventId in Album.events
-      required: false, // you might allow "unassigned" photos later
+      required: false, // might allow "unassigned" photos later
     },
     photographerId: {
       type: mongoose.Schema.Types.ObjectId,
