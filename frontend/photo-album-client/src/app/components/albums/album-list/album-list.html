@@ -1,0 +1,17 @@
+<h2>Your Albums</h2>
+
+<div *ngIf="isLoading">Loading...</div>
+
+<div *ngIf="!isLoading && errorMessage" class="error">
+  {{ errorMessage }}
+</div>
+
+<div *ngIf="!isLoading && !errorMessage && albums.length === 0">
+  <p>No albums yet.</p>
+</div>
+
+<ul *ngIf="!isLoading && albums.length > 0">
+  <li *ngFor="let album of albums" (click)="goToAlbum(album._id)">
+    {{ album.title }}
+  </li>
+</ul>
