@@ -12,6 +12,25 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/albums/album-list/album-list').then(m => m.AlbumList)
   },
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: '**', redirectTo: 'login' }
+  {
+    path: 'albums/create',
+    loadComponent: () =>
+      import('./components/albums/album-create/album-create')
+        .then(m => m.AlbumCreateComponent)
+  },
+  {
+    path: 'albums/:id',
+    loadComponent: () =>
+      import('./components/albums/album-details/album-details')
+        .then(m => m.AlbumDetailsComponent)
+  },
+  {
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
+  },
+  {
+    path: '**',
+    redirectTo: 'login'
+  }
 ];

@@ -1,0 +1,9 @@
+.error {
+  color: #b00020;
+  margin-top: 0.5rem;
+}
+
+.field-error {
+  color: #b00020;
+  font-size: 0.85rem;
+}

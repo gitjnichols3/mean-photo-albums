@@ -1,0 +1,36 @@
+<h2>Create New Album</h2>
+
+<form (ngSubmit)="onSubmit()" #albumForm="ngForm" novalidate>
+  <div>
+    <label for="title">Title</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      required
+      [(ngModel)]="title"
+    />
+  </div>
+
+  <div>
+    <label for="description">Description</label>
+    <textarea
+      id="description"
+      name="description"
+      rows="3"
+      [(ngModel)]="description"
+    ></textarea>
+  </div>
+
+  <p *ngIf="formError" class="error">
+    {{ formError }}
+  </p>
+
+  <button type="submit" [disabled]="isSubmitting">
+    {{ isSubmitting ? 'Saving...' : 'Create Album' }}
+  </button>
+
+  <button type="button" (click)="cancel()">
+    Cancel
+  </button>
+</form>

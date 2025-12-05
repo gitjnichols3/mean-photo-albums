@@ -1,0 +1,36 @@
+.album-actions {
+  margin: 0 0 1rem;
+}
+
+.album-actions button {
+  padding: 0.4rem 0.8rem;
+}
+
+.create-album-form {
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.form-row input,
+.form-row textarea {
+  padding: 0.35rem;
+  font: inherit;
+}
+
+.error {
+  color: #b00020;
+  margin-top: 0.25rem;
+}

@@ -1,0 +1,72 @@
+.album-details {
+  max-width: 700px;
+  padding: 1rem 0;
+}
+
+.error {
+  color: #b00020;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.events-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid #ddd;
+  padding-top: 1rem;
+}
+
+.events-section h3 {
+  margin-top: 0;
+}
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.event-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.event-item:last-child {
+  border-bottom: none;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.event-name {
+  font-weight: 600;
+}
+
+.event-dates {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.event-description {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+}
+
+.no-events {
+  font-style: italic;
+  opacity: 0.8;
+}

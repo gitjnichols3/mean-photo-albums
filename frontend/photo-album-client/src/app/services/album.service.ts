@@ -2,7 +2,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { Album } from '../models/album.model';
@@ -12,7 +12,6 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class AlbumService {
-  // Base URL for album API, e.g. https://localhost:3000/api/albums
   private baseUrl = `${environment.apiBaseUrl}/albums`;
 
   constructor(
@@ -20,61 +19,109 @@ export class AlbumService {
     private authService: AuthService
   ) {}
 
-  // Build HttpHeaders with JWT if available
   private getAuthHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
-    let headers = new HttpHeaders();
+    let headers = new HttpHeaders().set('Content-Type', 'application/json');
 
-    if (token) {
-      headers = headers.set('Authorization', `Bearer ${token}`);
+    // Make absolutely sure this never throws synchronously
+    try {
+      const token = this.authService?.getToken?.();
+      if (token) {
+        headers = headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        console.warn('[AlbumService] No token found in getAuthHeaders()');
+      }
+    } catch (err) {
+      console.error('[AlbumService] Error getting token:', err);
     }
 
     return headers;
   }
 
-    // GET /api/albums
-    getAlbums(): Observable<{ message: string; albums: Album[] }> {
-    return this.http.get<{ message: string; albums: Album[] }>(this.baseUrl, {
+  /**
+   * GET /api/albums
+   * Handles either:
+   *   - [Album, ...]
+   *   - { message: string; albums: Album[] }
+   */
+  getAlbums(): Observable<Album[]> {
+    console.log('[AlbumService] getAlbums() called. baseUrl =', this.baseUrl);
+
+    return this.http
+      .get<any>(this.baseUrl, {
         headers: this.getAuthHeaders()
-    });
-    }
+      })
+      .pipe(
+        map((res: any) => {
+          console.log('[AlbumService] Raw response from /albums:', res);
 
+          if (Array.isArray(res)) {
+            return res as Album[];
+          }
 
-  // GET /api/albums/:id
-  getAlbumById(id: string): Observable<Album> {
-    return this.http.get<Album>(`${this.baseUrl}/${id}`, {
-      headers: this.getAuthHeaders()
-    });
+          if (res && Array.isArray(res.albums)) {
+            return res.albums as Album[];
+          }
+
+          return [];
+        })
+      );
   }
 
-  // POST /api/albums
-  createAlbum(payload: Partial<Album>): Observable<Album> {
-    return this.http.post<Album>(this.baseUrl, payload, {
-      headers: this.getAuthHeaders()
-    });
+// GET /api/albums/:id
+getAlbumById(id: string): Observable<Album> {
+  console.log('[AlbumService] getAlbumById() called. id =', id);
+  return this.http.get<any>(`${this.baseUrl}/${id}`, {
+    headers: this.getAuthHeaders()
+  }).pipe(
+    map(res => {
+      console.log('[AlbumService] Raw response from /albums/:id:', res);
+      // Handle both { album: {...} } and plain album object
+      if (res && res.album) {
+        return res.album as Album;
+      }
+      return res as Album;
+    })
+  );
+}
+
+
+  /**
+   * POST /api/albums
+   */
+  createAlbum(payload: { title: string; description?: string }): Observable<Album> {
+    console.log('[AlbumService] createAlbum() payload:', payload);
+
+    return this.http
+      .post<any>(this.baseUrl, payload, {
+        headers: this.getAuthHeaders()
+      })
+      .pipe(
+        map((res: any) => {
+          console.log('[AlbumService] Raw response from createAlbum:', res);
+          if (res && res.album) {
+            return res.album as Album;
+          }
+          return res as Album;
+        })
+      );
   }
 
   // PUT /api/albums/:id
-  updateAlbum(id: string, payload: Partial<Album>): Observable<Album> {
-    return this.http.put<Album>(`${this.baseUrl}/${id}`, payload, {
-      headers: this.getAuthHeaders()
-    });
-  }
+updateAlbum(id: string, update: Partial<Album>): Observable<Album> {
+  console.log('[AlbumService] updateAlbum() called. id =', id, 'update =', update);
 
-  // DELETE /api/albums/:id
-  deleteAlbum(id: string): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.baseUrl}/${id}`, {
-      headers: this.getAuthHeaders()
-    });
-  }
+  return this.http.put<any>(`${this.baseUrl}/${id}`, update, {
+    headers: this.getAuthHeaders()
+  }).pipe(
+    map(res => {
+      console.log('[AlbumService] Raw response from PUT /albums/:id:', res);
+      if (res && res.album) {
+        return res.album as Album;
+      }
+      return res as Album;
+    })
+  );
+}
 
-  // Optional: POST /api/albums/:id/share
-  shareAlbum(
-    id: string,
-    body: { emails: string[] }
-  ): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.baseUrl}/${id}/share`, body, {
-      headers: this.getAuthHeaders()
-    });
-  }
+
 }

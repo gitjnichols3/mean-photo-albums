@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { AlbumService } from '../../../services/album.service';
 import { Album } from '../../../models/album.model';
@@ -8,14 +10,12 @@ import { Album } from '../../../models/album.model';
 @Component({
   selector: 'app-album-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './album-list.html',
   styleUrl: './album-list.css',
 })
 export class AlbumList implements OnInit {
-
-  albums: Album[] = [];
-  isLoading = false;
+  albums$!: Observable<Album[]>;
   errorMessage = '';
 
   constructor(
@@ -24,27 +24,21 @@ export class AlbumList implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('[AlbumList] ngOnInit');
     this.loadAlbums();
   }
 
   loadAlbums(): void {
-    console.log('[AlbumList] loadAlbums()');
-    this.isLoading = true;
     this.errorMessage = '';
 
-    this.albumService.getAlbums().subscribe({
-      next: (res) => {
-        console.log('[AlbumList] API response:', res);
-        this.albums = res.albums || [];
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('[AlbumList] error loading albums:', err);
-        this.errorMessage = err?.error?.message || 'Could not load albums';
-        this.isLoading = false;
-      }
-    });
+    this.albums$ = this.albumService.getAlbums().pipe(
+      catchError(err => {
+        this.errorMessage =
+          err?.error?.message ||
+          err?.message ||
+          'Could not load albums';
+        return of<Album[]>([]);
+      })
+    );
   }
 
   goToAlbum(albumId: string): void {
