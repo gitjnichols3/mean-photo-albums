@@ -8,6 +8,9 @@ import { environment } from '../../environments/environment';
 import { Album } from '../models/album.model';
 import { AuthService } from './auth.service';
 
+
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -130,6 +133,55 @@ getAlbumById(id: string): Observable<Album> {
         })
       );
   }
+
+    /**
+   * PUT /api/albums/:id/events/:eventId
+   * Updates a single event in an album and returns the updated album
+   */
+  updateEventInAlbum(
+    albumId: string,
+    eventId: string,
+    payload: { name: string; startDate?: string; location?: string }
+  ): Observable<Album> {
+    console.log('[AlbumService] updateEventInAlbum()', albumId, eventId, payload);
+
+    return this.http
+      .put<any>(`${this.baseUrl}/${albumId}/events/${eventId}`, payload, {
+        headers: this.getAuthHeaders(),
+      })
+      .pipe(
+        map((res: any) => {
+          console.log('[AlbumService] Raw response from PUT /albums/:id/events/:eventId:', res);
+          if (res && res.album) {
+            return res.album as Album;
+          }
+          return res as Album;
+        })
+      );
+  }
+
+  /**
+   * DELETE /api/albums/:id/events/:eventId
+   * Deletes a single event from an album and returns the updated album
+   */
+  deleteEventFromAlbum(albumId: string, eventId: string): Observable<Album> {
+    console.log('[AlbumService] deleteEventFromAlbum()', albumId, eventId);
+
+    return this.http
+      .delete<any>(`${this.baseUrl}/${albumId}/events/${eventId}`, {
+        headers: this.getAuthHeaders(),
+      })
+      .pipe(
+        map((res: any) => {
+          console.log('[AlbumService] Raw response from DELETE /albums/:id/events/:eventId:', res);
+          if (res && res.album) {
+            return res.album as Album;
+          }
+          return res as Album;
+        })
+      );
+  }
+
 
 
   // PUT /api/albums/:id

@@ -2,28 +2,32 @@
   ← Back to Albums
 </button>
 
+
+
 <p *ngIf="errorMessage" class="error">
   {{ errorMessage }}
 </p>
 
-<ng-container *ngIf="album$ | async as album; else loading">
-  <ng-container *ngIf="album; else notFound">
-    <h2>{{ album.title }}</h2>
+<!-- If we have an album, show everything -->
+<div *ngIf="album as a">
+  <h2>{{ a.title }}</h2>
 
-    <p *ngIf="album.description">
-      {{ album.description }}
-    </p>
+  <p *ngIf="a.description">
+    {{ a.description }}
+  </p>
 
-    <p>Album ID: {{ album._id }}</p>
-    <p>Events: {{ album.events && album.events.length || 0 }}</p>
+  <p>Album ID: {{ a._id }}</p>
+  <p>Events: {{ a.events?.length || 0 }}</p>
 
-    <hr />
+  <hr />
 
-    <!-- Events list -->
-    <div *ngIf="album.events && album.events.length > 0; else noEvents">
-      <h3>Events</h3>
-      <ul>
-        <li *ngFor="let ev of album.events">
+  <!-- Events list -->
+  <div *ngIf="a.events && a.events.length > 0; else noEvents">
+    <h3>Events</h3>
+    <ul>
+      <li *ngFor="let ev of a.events; trackBy: trackEvent">
+        <!-- Display mode -->
+        <ng-container *ngIf="editingEventId !== ev.eventId; else editEventBlock">
           <strong>{{ ev.name }}</strong>
           <span *ngIf="ev.startDate">
             — {{ ev.startDate }}
@@ -31,65 +35,116 @@
           <span *ngIf="ev.location">
             — {{ ev.location }}
           </span>
-        </li>
-      </ul>
+
+          <button type="button" (click)="startEditEvent(ev)">
+            Edit
+          </button>
+          <button type="button" (click)="deleteEvent(ev)">
+            Delete
+          </button>
+        </ng-container>
+
+        <!-- Edit mode -->
+        <ng-template #editEventBlock>
+          <form (ngSubmit)="saveEventChanges()">
+            <div>
+              <label for="editName">Name</label>
+              <input
+                id="editName"
+                name="editName"
+                type="text"
+                [(ngModel)]="editEventName"
+                required
+              />
+            </div>
+
+            <div>
+              <label for="editDate">Date</label>
+              <input
+                id="editDate"
+                name="editDate"
+                type="date"
+                [(ngModel)]="editEventDate"
+              />
+            </div>
+
+            <div>
+              <label for="editLocation">Location</label>
+              <input
+                id="editLocation"
+                name="editLocation"
+                type="text"
+                [(ngModel)]="editEventLocation"
+              />
+            </div>
+
+            <p *ngIf="formError" class="error">
+              {{ formError }}
+            </p>
+
+            <button type="submit">
+              Save
+            </button>
+            <button type="button" (click)="cancelEditEvent()">
+              Cancel
+            </button>
+          </form>
+        </ng-template>
+      </li>
+    </ul>
+  </div>
+
+  <ng-template #noEvents>
+    <p class="no-events">No events yet for this album.</p>
+  </ng-template>
+
+  <hr />
+
+  <!-- Add event form -->
+  <h3>Add Event</h3>
+  <form (ngSubmit)="addEvent()">
+    <div>
+      <label for="newEventName">Name</label>
+      <input
+        id="newEventName"
+        name="newEventName"
+        type="text"
+        [(ngModel)]="newEventName"
+        required
+      />
     </div>
 
-    <ng-template #noEvents>
-      <p>This album has no events yet.</p>
-    </ng-template>
+    <div>
+      <label for="newEventDate">Date</label>
+      <input
+        id="newEventDate"
+        name="newEventDate"
+        type="date"
+        [(ngModel)]="newEventDate"
+      />
+    </div>
 
-    <hr />
+    <div>
+      <label for="newEventLocation">Location</label>
+      <input
+        id="newEventLocation"
+        name="newEventLocation"
+        type="text"
+        [(ngModel)]="newEventLocation"
+      />
+    </div>
 
-    <h3>Add a new event</h3>
+    <p *ngIf="formError" class="error">
+      {{ formError }}
+    </p>
 
-    <form (ngSubmit)="addEvent(album)" #eventForm="ngForm" novalidate>
-      <div>
-        <label for="eventName">Name</label>
-        <input
-          id="eventName"
-          name="eventName"
-          type="text"
-          required
-          [(ngModel)]="newEventName"
-        />
-      </div>
+    <button type="submit">
+      Add event
+    </button>
+  </form>
+</div>
 
-      <div>
-        <label for="eventDate">Start date</label>
-        <input
-          id="eventDate"
-          name="eventDate"
-          type="date"
-          [(ngModel)]="newEventDate"
-        />
-      </div>
-
-      <div>
-        <label for="eventLocation">Location</label>
-        <input
-          id="eventLocation"
-          name="eventLocation"
-          type="text"
-          [(ngModel)]="newEventLocation"
-        />
-      </div>
-
-      <p *ngIf="formError" class="error">
-        {{ formError }}
-      </p>
-
-      <button type="submit">
-        Add event
-      </button>
-    </form>
-  </ng-container>
-</ng-container>
-
-<ng-template #loading>
-  <p>Loading album details...</p>
-</ng-template>
-
-<ng-template #notFound>
-  <p>Album not found.</p>
-</ng-template>
+<!-- If no album yet and no error, show loading -->
+<div *ngIf="!album && !errorMessage">
+  Loading album details...
+</div>

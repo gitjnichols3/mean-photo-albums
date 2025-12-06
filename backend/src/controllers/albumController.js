@@ -173,6 +173,84 @@ const addEventToAlbum = async (req, res) => {
   }
 };
 
+const updateEventInAlbum = async (req, res) => {
+  try {
+    const albumId = req.params.id;
+    const eventId = req.params.eventId;
+    const { name, startDate, endDate, location } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Event name is required' });
+    }
+
+    const album = await Album.findOne({
+      _id: albumId,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found or not authorized' });
+    }
+
+    const idx = album.events.findIndex(ev => ev.eventId === eventId);
+    if (idx === -1) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    album.events[idx].name = name;
+    album.events[idx].startDate = startDate || null;
+    album.events[idx].endDate = endDate || null;
+    album.events[idx].location = location || '';
+
+    await album.save();
+
+    res.json({
+      message: 'Event updated successfully',
+      album,
+      event: album.events[idx],
+    });
+  } catch (err) {
+    console.error('Error in updateEventInAlbum:', err.message);
+    res.status(500).json({ message: 'Server error while updating event' });
+  }
+};
+
+const deleteEventFromAlbum = async (req, res) => {
+  try {
+    const albumId = req.params.id;
+    const eventId = req.params.eventId;
+
+    const album = await Album.findOne({
+      _id: albumId,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found or not authorized' });
+    }
+
+    const idx = album.events.findIndex(ev => ev.eventId === eventId);
+    if (idx === -1) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const removed = album.events[idx];
+
+    album.events.splice(idx, 1);
+    await album.save();
+
+    res.json({
+      message: 'Event deleted successfully',
+      album,
+      removedEvent: removed,
+    });
+  } catch (err) {
+    console.error('Error in deleteEventFromAlbum:', err.message);
+    res.status(500).json({ message: 'Server error while deleting event' });
+  }
+};
+
+
 
 const deleteAlbum = async (req, res) => {
   try {
@@ -210,7 +288,10 @@ module.exports = {
   updateAlbum,
   deleteAlbum,
   addEventToAlbum,
+  updateEventInAlbum,
+  deleteEventFromAlbum,
 };
+
 
 
 
