@@ -73,7 +73,7 @@ export class AlbumDetailsComponent implements OnInit {
     this.router.navigate(['/albums']);
   }
 
-  addEvent(album: Album | null): void {
+    addEvent(album: Album | null): void {
     this.formError = '';
 
     if (!album) {
@@ -89,25 +89,26 @@ export class AlbumDetailsComponent implements OnInit {
       return;
     }
 
-    // Local event object; no dependency on AlbumEvent type
-    const newEvent = {
+    const payload = {
       name,
       startDate: date || undefined,
       location: location || undefined
     };
 
-    // Ensure events exists and is an array
-    if (!Array.isArray((album as any).events)) {
-      (album as any).events = [];
-    }
-
-    (album as any).events.push(newEvent);
-
-    this.resetEventForm();
-
-    // Later you can hook this into an API call to persist the new event
-    // this.albumService.addEventToAlbum(album._id, newEvent).subscribe(...)
+    this.albumService.addEventToAlbum(album._id, payload).subscribe({
+      next: (updatedAlbum) => {
+        // Replace the current album's events with the server's version,
+        // which now includes eventId, normalized dates, etc.
+        (album as any).events = (updatedAlbum as any).events || [];
+        this.resetEventForm();
+      },
+      error: (err) => {
+        console.error('Error adding event', err);
+        this.formError = 'Failed to add event';
+      }
+    });
   }
+
 
   private resetEventForm(): void {
     this.newEventName = '';

@@ -18,8 +18,10 @@ const createAlbum = async (req, res) => {
         name: event.name,
         startDate: event.startDate || null,
         endDate: event.endDate || null,
+        location: event.location || '',
       }));
     }
+
 
     // Create the album, tying it to the authenticated user
     const album = new Album({
@@ -112,8 +114,10 @@ const updateAlbum = async (req, res) => {
         name: event.name,
         startDate: event.startDate || null,
         endDate: event.endDate || null,
+        location: event.location || '',
       }));
     }
+
 
     await album.save();
 
@@ -126,6 +130,49 @@ const updateAlbum = async (req, res) => {
     res.status(500).json({ message: 'Server error while updating album' });
   }
 };
+
+const addEventToAlbum = async (req, res) => {
+  try {
+    const albumId = req.params.id;
+    const { name, startDate, endDate, location } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: 'Event name is required' });
+    }
+
+    // Find the album and ensure it belongs to the logged-in user
+    const album = await Album.findOne({
+      _id: albumId,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found or not authorized' });
+    }
+
+    const newEvent = {
+      eventId: uuidv4(),
+      name,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      location: location || '',
+    };
+
+    album.events.push(newEvent);
+
+    await album.save();
+
+    res.status(201).json({
+      message: 'Event added successfully',
+      album,
+      event: newEvent,
+    });
+  } catch (err) {
+    console.error('Error in addEventToAlbum:', err.message);
+    res.status(500).json({ message: 'Server error while adding event' });
+  }
+};
+
 
 const deleteAlbum = async (req, res) => {
   try {
@@ -162,7 +209,9 @@ module.exports = {
   getAlbumById,
   updateAlbum,
   deleteAlbum,
+  addEventToAlbum,
 };
+
 
 
 

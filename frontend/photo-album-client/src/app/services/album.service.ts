@@ -106,6 +106,32 @@ getAlbumById(id: string): Observable<Album> {
       );
   }
 
+    /**
+   * POST /api/albums/:id/events
+   * Adds a single event to an album and returns the updated album
+   */
+  addEventToAlbum(
+    albumId: string,
+    payload: { name: string; startDate?: string; location?: string }
+  ): Observable<Album> {
+    console.log('[AlbumService] addEventToAlbum() albumId =', albumId, 'payload =', payload);
+
+    return this.http
+      .post<any>(`${this.baseUrl}/${albumId}/events`, payload, {
+        headers: this.getAuthHeaders()
+      })
+      .pipe(
+        map((res: any) => {
+          console.log('[AlbumService] Raw response from POST /albums/:id/events:', res);
+          if (res && res.album) {
+            return res.album as Album;
+          }
+          return res as Album;
+        })
+      );
+  }
+
+
   // PUT /api/albums/:id
 updateAlbum(id: string, update: Partial<Album>): Observable<Album> {
   console.log('[AlbumService] updateAlbum() called. id =', id, 'update =', update);

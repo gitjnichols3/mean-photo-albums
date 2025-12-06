@@ -18,7 +18,12 @@ const eventSchema = new mongoose.Schema(
     endDate: {
       type: Date,
       required: false,
-    }
+    },
+    location: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   { _id: false } // prevents Mongoose from creating its own _id for embedded events
 );
