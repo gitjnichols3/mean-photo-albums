@@ -2,8 +2,6 @@
   ← Back to Albums
 </button>
 
-
-
 <p *ngIf="errorMessage" class="error">
   {{ errorMessage }}
 </p>
@@ -17,7 +15,7 @@
   </p>
 
   <p>Album ID: {{ a._id }}</p>
-  <p>Events: {{ a.events?.length || 0 }}</p>
+  <p>Events: {{ a.events.length }}</p>
 
   <hr />
 
@@ -90,24 +88,44 @@
             </button>
           </form>
         </ng-template>
+
+        <!-- Photos for this event -->
+        <div
+          *ngIf="getPhotosForEvent(ev.eventId).length > 0"
+          class="event-photos"
+        >
+          <h4>Photos for this event</h4>
+          <div class="photo-grid">
+            <figure *ngFor="let p of getPhotosForEvent(ev.eventId)">
+              <img
+                [src]="imageBaseUrl + p.originalUrl"
+                [alt]="ev.name || a.title"
+                class="photo-thumb"
+              />
+              <figcaption *ngIf="p.uploadedAt">
+                {{ p.uploadedAt | date: 'short' }}
+              </figcaption>
+            </figure>
+          </div>
+        </div>
       </li>
     </ul>
   </div>
 
   <ng-template #noEvents>
-    <p class="no-events">No events yet for this album.</p>
+    <p>No events yet. Add the first one below.</p>
   </ng-template>
 
   <hr />
 
-  <!-- Add event form -->
-  <h3>Add Event</h3>
+  <!-- Add new event form -->
+  <h3>Add a new event</h3>
   <form (ngSubmit)="addEvent()">
     <div>
-      <label for="newEventName">Name</label>
+      <label for="newName">Name</label>
       <input
-        id="newEventName"
-        name="newEventName"
+        id="newName"
+        name="newName"
         type="text"
         [(ngModel)]="newEventName"
         required
@@ -115,20 +133,20 @@
     </div>
 
     <div>
-      <label for="newEventDate">Date</label>
+      <label for="newDate">Date</label>
       <input
-        id="newEventDate"
-        name="newEventDate"
+        id="newDate"
+        name="newDate"
         type="date"
         [(ngModel)]="newEventDate"
       />
     </div>
 
     <div>
-      <label for="newEventLocation">Location</label>
+      <label for="newLocation">Location</label>
       <input
-        id="newEventLocation"
-        name="newEventLocation"
+        id="newLocation"
+        name="newLocation"
         type="text"
         [(ngModel)]="newEventLocation"
       />
@@ -142,6 +160,89 @@
       Add event
     </button>
   </form>
+
+  <hr />
+
+  <!-- Photos section -->
+  <section class="photos">
+    <h3>Photos</h3>
+
+    <p *ngIf="photoError" class="error">
+      {{ photoError }}
+    </p>
+
+    <div *ngIf="isLoadingPhotos">
+      Loading photos...
+    </div>
+
+    <!-- No photos at all -->
+    <div *ngIf="!isLoadingPhotos && photos.length === 0">
+      No photos yet for this album.
+    </div>
+
+    <!-- Unassigned photos (no eventId) -->
+    <div
+      *ngIf="!isLoadingPhotos && unassignedPhotos.length > 0"
+      class="unassigned-photos"
+    >
+      <h4>Photos not attached to an event</h4>
+      <div class="photo-grid">
+        <figure *ngFor="let p of unassignedPhotos">
+          <img
+            [src]="imageBaseUrl + p.originalUrl"
+            [alt]="a.title"
+            class="photo-thumb"
+          />
+          <figcaption *ngIf="p.uploadedAt">
+            {{ p.uploadedAt | date: 'short' }}
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <!-- Upload form -->
+    <form (ngSubmit)="onUploadPhotos($event)" class="photo-upload-form">
+      <div>
+        <label for="photoEvent">
+          Attach to event (optional)
+        </label>
+        <select
+          id="photoEvent"
+          name="photoEvent"
+          [(ngModel)]="selectedEventId"
+        >
+          <option value="">
+            (No specific event)
+          </option>
+          <option
+            *ngFor="let ev of a.events"
+            [value]="ev.eventId"
+          >
+            {{ ev.name }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label for="photoFiles">
+          Add photos
+        </label>
+        <input
+          id="photoFiles"
+          type="file"
+          multiple
+          (change)="onFilesSelected($event)"
+        />
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="isUploading || !selectedFiles"
+      >
+        {{ isUploading ? 'Uploading…' : 'Upload' }}
+      </button>
+    </form>
+  </section>
 </div>
 
 <!-- If no album yet and no error, show loading -->

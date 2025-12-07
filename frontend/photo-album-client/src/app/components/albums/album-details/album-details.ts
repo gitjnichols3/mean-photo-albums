@@ -7,6 +7,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { Album } from '../../../models/album.model';
 import { AlbumService } from '../../../services/album.service';
+import { Photo } from '../../../models/photo.model';
+import { PhotoService } from '../../../services/photo.service';
+import { forkJoin } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   standalone: true,
@@ -37,11 +41,25 @@ export class AlbumDetailsComponent implements OnInit {
   editEventDate = '';
   editEventLocation = '';
 
+  // Photos state
+  photos: Photo[] = [];
+  isLoadingPhotos = false;
+  photoError = '';
+  isUploading = false;
+  selectedFiles: FileList | null = null;
+
+  // Which event to attach new uploads to (optional)
+  selectedEventId: string | '' = '';
+
+  // Base URL for image files (strip /api from apiBaseUrl)
+  imageBaseUrl = environment.apiBaseUrl.replace(/\/api\/?$/, '');
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private albumService: AlbumService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private photoService: PhotoService
   ) {}
 
   ngOnInit(): void {
@@ -72,9 +90,10 @@ export class AlbumDetailsComponent implements OnInit {
         console.log('[AlbumDetails] this.album after assign:', this.album);
 
         this.isLoading = false;
-
-        // Force Angular to notice the new value
         this.cdr.detectChanges();
+
+        // Once album is loaded, load its photos
+        this.loadPhotos();
       },
       error: (err) => {
         console.error('[AlbumDetails] Error loading album', err);
@@ -89,6 +108,94 @@ export class AlbumDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/albums']);
+  }
+
+  // ------------------------
+  // PHOTOS
+  // ------------------------
+  private loadPhotos(): void {
+    if (!this.album?._id) {
+      return;
+    }
+
+    this.isLoadingPhotos = true;
+    this.photoError = '';
+
+    this.photoService.getPhotosForAlbum(this.album._id).subscribe({
+      next: (photos) => {
+        console.log('[AlbumDetails] Photos loaded:', photos);
+        this.photos = photos;
+        this.isLoadingPhotos = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[AlbumDetails] Error loading photos', err);
+        this.photoError = 'Failed to load photos';
+        this.isLoadingPhotos = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedFiles = input.files;
+  }
+
+  onUploadPhotos(event: Event): void {
+    event.preventDefault();
+
+    if (!this.album?._id || !this.selectedFiles || this.selectedFiles.length === 0) {
+      return;
+    }
+
+    this.isUploading = true;
+    this.photoError = '';
+
+    const uploads$ = [];
+    const eventId = this.selectedEventId || undefined;
+
+    for (let i = 0; i < this.selectedFiles.length; i++) {
+      const file = this.selectedFiles.item(i);
+      if (file) {
+        uploads$.push(this.photoService.uploadPhoto(this.album._id, file, eventId));
+      }
+    }
+
+    if (uploads$.length === 0) {
+      this.isUploading = false;
+      return;
+    }
+
+    forkJoin(uploads$).subscribe({
+      next: (uploadedPhotos: Photo[]) => {
+        console.log('[AlbumDetails] Upload success:', uploadedPhotos);
+        this.photos = [...this.photos, ...uploadedPhotos];
+        this.isUploading = false;
+        this.selectedFiles = null;
+        // keep selectedEventId so you can upload multiple to same event
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[AlbumDetails] Error uploading photos', err);
+        this.photoError = 'Failed to upload photos';
+        this.isUploading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // Photos attached to a given event
+  getPhotosForEvent(eventId: string | null | undefined): Photo[] {
+    if (!eventId) {
+      return [];
+    }
+    return this.photos.filter((p) => p.eventId === eventId);
+  }
+
+  // Photos not attached to any event
+  get unassignedPhotos(): Photo[] {
+    return this.photos.filter((p) => !p.eventId);
   }
 
   // ------------------------
@@ -274,7 +381,7 @@ export class AlbumDetailsComponent implements OnInit {
       });
   }
 
-  // trackBy for ngFor (used when we bring the full template back)
+  // trackBy for ngFor
   trackEvent(index: number, ev: any): string {
     return ev.eventId || index.toString();
   }

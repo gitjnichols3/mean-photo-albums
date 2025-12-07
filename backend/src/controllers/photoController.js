@@ -50,6 +50,40 @@ const uploadPhoto = async (req, res) => {
   }
 };
 
+const getPhotosForAlbum = async (req, res) => {
+  try {
+    const { albumId } = req.params;
+
+    if (!albumId) {
+      return res.status(400).json({ message: 'albumId is required' });
+    }
+
+    // Make sure the album belongs to the logged-in user
+    const album = await Album.findOne({
+      _id: albumId,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res
+        .status(404)
+        .json({ message: 'Album not found or not authorized' });
+    }
+
+    const photos = await Photo.find({ albumId }).sort({ uploadedAt: 1 });
+
+    res.json({ photos });
+  } catch (err) {
+    console.error('Error in getPhotosForAlbum:', err.message);
+    res
+      .status(500)
+      .json({ message: 'Server error while loading photos' });
+  }
+};
+
+
 module.exports = {
   uploadPhoto,
+  getPhotosForAlbum,
 };
+
