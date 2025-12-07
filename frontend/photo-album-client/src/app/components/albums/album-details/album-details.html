@@ -1,4 +1,4 @@
-<button type="button" (click)="goBack()">
+<button type="button" (click)="goBack()" class="btn-back">
   ← Back to Albums
 </button>
 
@@ -6,246 +6,189 @@
   {{ errorMessage }}
 </p>
 
-<!-- If we have an album, show everything -->
-<div *ngIf="album as a">
-  <h2>{{ a.title }}</h2>
+<!-- Main album content -->
+<div *ngIf="album as a" class="album-details">
+  <header class="album-header">
+    <h2 class="album-title">{{ a.title }}</h2>
+    <p *ngIf="a.description" class="album-description">
+      {{ a.description }}
+    </p>
+  </header>
 
-  <p *ngIf="a.description">
-    {{ a.description }}
-  </p>
+  <div class="album-layout">
+    <!-- TIMELINE COLUMN -->
+    <section class="timeline">
+      <h3 class="section-heading">Event Timeline</h3>
 
-  <p>Album ID: {{ a._id }}</p>
-  <p>Events: {{ a.events.length }}</p>
+      <div *ngIf="timelineGroups.length === 0" class="empty-state">
+        No events yet. Add your first event below.
+      </div>
 
-  <hr />
+      <ng-container *ngFor="let group of timelineGroups">
+        <h4 class="timeline-date">
+          {{ group.dateLabel }}
+        </h4>
 
-  <!-- Events list -->
-  <div *ngIf="a.events && a.events.length > 0; else noEvents">
-    <h3>Events</h3>
-    <ul>
-      <li *ngFor="let ev of a.events; trackBy: trackEvent">
-        <!-- Display mode -->
-        <ng-container *ngIf="editingEventId !== ev.eventId; else editEventBlock">
-          <strong>{{ ev.name }}</strong>
-          <span *ngIf="ev.startDate">
-            — {{ ev.startDate }}
-          </span>
-          <span *ngIf="ev.location">
-            — {{ ev.location }}
-          </span>
-
-          <button type="button" (click)="startEditEvent(ev)">
-            Edit
-          </button>
-          <button type="button" (click)="deleteEvent(ev)">
-            Delete
-          </button>
-        </ng-container>
-
-        <!-- Edit mode -->
-        <ng-template #editEventBlock>
-          <form (ngSubmit)="saveEventChanges()">
-            <div>
-              <label for="editName">Name</label>
-              <input
-                id="editName"
-                name="editName"
-                type="text"
-                [(ngModel)]="editEventName"
-                required
-              />
-            </div>
-
-            <div>
-              <label for="editDate">Date</label>
-              <input
-                id="editDate"
-                name="editDate"
-                type="date"
-                [(ngModel)]="editEventDate"
-              />
-            </div>
-
-            <div>
-              <label for="editLocation">Location</label>
-              <input
-                id="editLocation"
-                name="editLocation"
-                type="text"
-                [(ngModel)]="editEventLocation"
-              />
-            </div>
-
-            <p *ngIf="formError" class="error">
-              {{ formError }}
-            </p>
-
-            <button type="submit">
-              Save
+        <ul class="timeline-list">
+          <li
+            *ngFor="let ev of group.events; trackBy: trackEvent"
+            [class.selected]="ev.eventId === selectedEventId"
+            class="timeline-event"
+          >
+            <button
+              type="button"
+              class="timeline-event-main"
+              (click)="selectEventForViewing(ev)"
+            >
+              <span class="timeline-dot"></span>
+              <span class="timeline-event-text">
+                <span class="timeline-event-name">
+                  {{ ev.name }}
+                </span>
+                <span *ngIf="ev.location" class="timeline-event-meta">
+                  {{ ev.location }}
+                </span>
+              </span>
             </button>
-            <button type="button" (click)="cancelEditEvent()">
-              Cancel
-            </button>
-          </form>
-        </ng-template>
 
-        <!-- Photos for this event -->
-        <div
-          *ngIf="getPhotosForEvent(ev.eventId).length > 0"
-          class="event-photos"
-        >
-          <h4>Photos for this event</h4>
-          <div class="photo-grid">
-            <figure *ngFor="let p of getPhotosForEvent(ev.eventId)">
-              <img
-                [src]="imageBaseUrl + p.originalUrl"
-                [alt]="ev.name || a.title"
-                class="photo-thumb"
-              />
-              <figcaption *ngIf="p.uploadedAt">
-                {{ p.uploadedAt | date: 'short' }}
-              </figcaption>
-            </figure>
-          </div>
+            <button
+              type="button"
+              class="btn-link btn-delete"
+              (click)="deleteEvent(ev)"
+            >
+              Delete
+            </button>
+          </li>
+        </ul>
+      </ng-container>
+
+      <button
+        type="button"
+        class="btn-secondary btn-small mt-1"
+        (click)="clearEventSelection()"
+      >
+        View unassigned photos
+      </button>
+    </section>
+
+    <!-- PHOTO COLUMN -->
+    <section class="photo-panel">
+      <h3 class="section-heading">
+        Photos: {{ selectedEventName }}
+      </h3>
+
+      <p *ngIf="photoError" class="error">
+        {{ photoError }}
+      </p>
+
+      <div *ngIf="isLoadingPhotos" class="loading">
+        Loading photos...
+      </div>
+
+      <div *ngIf="!isLoadingPhotos">
+        <div *ngIf="selectedEventId && selectedEventPhotos.length === 0" class="empty-state">
+          No photos for this event yet.
         </div>
-      </li>
-    </ul>
+
+        <div *ngIf="!selectedEventId && unassignedPhotos.length === 0" class="empty-state">
+          No unassigned photos.
+        </div>
+
+        <div class="photo-grid">
+          <figure
+            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos"
+            class="photo-card"
+          >
+            <img
+              [src]="imageBaseUrl + p.originalUrl"
+              [alt]="selectedEventId ? selectedEventName : a.title"
+              class="photo-thumb"
+            />
+            <figcaption *ngIf="p.uploadedAt" class="photo-caption">
+              {{ p.uploadedAt | date: 'short' }}
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <!-- Upload form -->
+      <form (ngSubmit)="onUploadPhotos($event)" class="photo-upload-form">
+        <p class="hint">
+          Uploads are attached to the currently selected event.
+          If no event is selected, photos will be unassigned.
+        </p>
+
+        <div class="form-row">
+          <label for="photoFiles" class="form-label">Add photos</label>
+          <input
+            id="photoFiles"
+            type="file"
+            multiple
+            (change)="onFilesSelected($event)"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="isUploading || !selectedFiles"
+        >
+          {{ isUploading ? 'Uploading…' : 'Upload' }}
+        </button>
+      </form>
+    </section>
   </div>
 
-  <ng-template #noEvents>
-    <p>No events yet. Add the first one below.</p>
-  </ng-template>
+  <hr class="divider" />
 
-  <hr />
+  <!-- ADD EVENT -->
+  <section class="add-event-section">
+    <h3 class="section-heading">Add a new event</h3>
 
-  <!-- Add new event form -->
-  <h3>Add a new event</h3>
-  <form (ngSubmit)="addEvent()">
-    <div>
-      <label for="newName">Name</label>
-      <input
-        id="newName"
-        name="newName"
-        type="text"
-        [(ngModel)]="newEventName"
-        required
-      />
-    </div>
-
-    <div>
-      <label for="newDate">Date</label>
-      <input
-        id="newDate"
-        name="newDate"
-        type="date"
-        [(ngModel)]="newEventDate"
-      />
-    </div>
-
-    <div>
-      <label for="newLocation">Location</label>
-      <input
-        id="newLocation"
-        name="newLocation"
-        type="text"
-        [(ngModel)]="newEventLocation"
-      />
-    </div>
-
-    <p *ngIf="formError" class="error">
-      {{ formError }}
-    </p>
-
-    <button type="submit">
-      Add event
-    </button>
-  </form>
-
-  <hr />
-
-  <!-- Photos section -->
-  <section class="photos">
-    <h3>Photos</h3>
-
-    <p *ngIf="photoError" class="error">
-      {{ photoError }}
-    </p>
-
-    <div *ngIf="isLoadingPhotos">
-      Loading photos...
-    </div>
-
-    <!-- No photos at all -->
-    <div *ngIf="!isLoadingPhotos && photos.length === 0">
-      No photos yet for this album.
-    </div>
-
-    <!-- Unassigned photos (no eventId) -->
-    <div
-      *ngIf="!isLoadingPhotos && unassignedPhotos.length > 0"
-      class="unassigned-photos"
-    >
-      <h4>Photos not attached to an event</h4>
-      <div class="photo-grid">
-        <figure *ngFor="let p of unassignedPhotos">
-          <img
-            [src]="imageBaseUrl + p.originalUrl"
-            [alt]="a.title"
-            class="photo-thumb"
-          />
-          <figcaption *ngIf="p.uploadedAt">
-            {{ p.uploadedAt | date: 'short' }}
-          </figcaption>
-        </figure>
-      </div>
-    </div>
-
-    <!-- Upload form -->
-    <form (ngSubmit)="onUploadPhotos($event)" class="photo-upload-form">
-      <div>
-        <label for="photoEvent">
-          Attach to event (optional)
-        </label>
-        <select
-          id="photoEvent"
-          name="photoEvent"
-          [(ngModel)]="selectedEventId"
-        >
-          <option value="">
-            (No specific event)
-          </option>
-          <option
-            *ngFor="let ev of a.events"
-            [value]="ev.eventId"
-          >
-            {{ ev.name }}
-          </option>
-        </select>
-      </div>
-
-      <div>
-        <label for="photoFiles">
-          Add photos
-        </label>
+    <form (ngSubmit)="addEvent()" class="add-event-form">
+      <div class="form-row">
+        <label for="newName" class="form-label">Name</label>
         <input
-          id="photoFiles"
-          type="file"
-          multiple
-          (change)="onFilesSelected($event)"
+          id="newName"
+          name="newName"
+          type="text"
+          [(ngModel)]="newEventName"
+          required
         />
       </div>
 
-      <button
-        type="submit"
-        [disabled]="isUploading || !selectedFiles"
-      >
-        {{ isUploading ? 'Uploading…' : 'Upload' }}
+      <div class="form-row">
+        <label for="newDate" class="form-label">Date</label>
+        <input
+          id="newDate"
+          name="newDate"
+          type="date"
+          [(ngModel)]="newEventDate"
+        />
+      </div>
+
+      <div class="form-row">
+        <label for="newLocation" class="form-label">Location</label>
+        <input
+          id="newLocation"
+          name="newLocation"
+          type="text"
+          [(ngModel)]="newEventLocation"
+        />
+      </div>
+
+      <p *ngIf="formError" class="error">
+        {{ formError }}
+      </p>
+
+      <button type="submit" class="btn-primary">
+        Add event
       </button>
     </form>
   </section>
 </div>
 
-<!-- If no album yet and no error, show loading -->
-<div *ngIf="!album && !errorMessage">
+<!-- Fallback loading state -->
+<div *ngIf="!album && !errorMessage" class="loading">
   Loading album details...
 </div>

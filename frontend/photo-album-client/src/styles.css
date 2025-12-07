@@ -1,1 +1,265 @@
-/* You can add global styles to this file, and also import other style files */
+/* --- Layout wrappers --- */
+
+.album-details {
+  max-width: 1100px;
+  margin: 1.5rem auto 3rem;
+  padding: 0 1rem;
+}
+
+.album-header {
+  margin-bottom: 1.5rem;
+}
+
+.album-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.9rem;
+}
+
+.album-description {
+  margin: 0;
+  color: #555;
+}
+
+.album-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Stack columns on small screens */
+@media (max-width: 768px) {
+  .album-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- General UI elements --- */
+
+.section-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.error {
+  color: #b3261e;
+  margin: 0.5rem 0;
+}
+
+.loading {
+  font-style: italic;
+  color: #555;
+}
+
+.empty-state {
+  font-style: italic;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Buttons */
+
+.btn-back {
+  margin: 0.75rem 1rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #1976d2;
+  color: #fff;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-secondary {
+  background-color: #f5f5f5;
+  color: #333;
+  border-color: #ccc;
+}
+
+.btn-small {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.btn-link {
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-delete {
+  color: #b3261e;
+}
+
+/* --- Forms --- */
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.add-event-form input,
+.photo-upload-form input[type="file"],
+.add-event-form input[type="text"],
+.add-event-form input[type="date"] {
+  padding: 0.35rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+/* --- Timeline --- */
+
+.timeline {
+  border-right: 1px solid #eee;
+  padding-right: 1rem;
+}
+
+@media (max-width: 768px) {
+  .timeline {
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    padding-right: 0;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+.timeline-date {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.timeline-list {
+  list-style: none;
+  padding-left: 0.75rem;
+  margin: 0 0 0.25rem;
+  border-left: 2px solid #ddd;
+}
+
+.timeline-event {
+  position: relative;
+  margin: 0.25rem 0;
+  padding-left: 0.5rem;
+}
+
+.timeline-event-main {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background-color: #bbb;
+  flex-shrink: 0;
+}
+
+.timeline-event-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.timeline-event-name {
+  font-size: 0.95rem;
+}
+
+.timeline-event-meta {
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.timeline-event.selected .timeline-dot {
+  background-color: #1976d2;
+}
+
+.timeline-event.selected .timeline-event-name {
+  font-weight: 600;
+}
+
+/* --- Photo panel --- */
+
+.photo-panel {
+  min-height: 200px;
+}
+
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.photo-card {
+  margin: 0;
+}
+
+.photo-thumb {
+  display: block;
+  width: 150px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.photo-caption {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* --- Misc --- */
+
+.divider {
+  margin: 2rem 0 1.5rem;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+.add-event-section {
+  max-width: 420px;
+}
