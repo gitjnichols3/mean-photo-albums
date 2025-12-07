@@ -24,6 +24,13 @@ export class AlbumDetailsComponent implements OnInit {
   errorMessage = '';
   albumId: string | null = null;
 
+    // Sharing
+  shareSlug: string | null = null;
+  shareUrl: string | null = null;
+  shareError = '';
+  isLoadingShare = false;
+
+
   // Add event
   newEventName = '';
   newEventDate = '';
@@ -347,6 +354,33 @@ export class AlbumDetailsComponent implements OnInit {
       error: (err: any) => {
         console.error('[AlbumDetails] Error deleting photo', err);
         this.photoError = 'Failed to delete photo';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  generateShareLink(): void {
+    if (!this.album?._id) {
+      return;
+    }
+
+    this.isLoadingShare = true;
+    this.shareError = '';
+
+    this.albumService.getShareLink(this.album._id).subscribe({
+      next: ({ shareSlug }) => {
+        this.shareSlug = shareSlug;
+
+        // For now, assume your Angular app is at localhost:4200
+        this.shareUrl = `http://localhost:4200/share/${shareSlug}`;
+
+        this.isLoadingShare = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[AlbumDetails] Error generating share link', err);
+        this.shareError = 'Failed to create share link';
+        this.isLoadingShare = false;
         this.cdr.detectChanges();
       },
     });

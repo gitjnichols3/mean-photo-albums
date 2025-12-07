@@ -1,0 +1,110 @@
+<div class="album-details">
+  <!-- ALWAYS show the raw flags so we can visually confirm -->
+  <!-- debug: isLoading={{ isLoading }} albumLoaded={{ !!album }} -->
+  <div *ngIf="isLoading" class="loading">
+    Loading album...
+  </div>
+
+  <p *ngIf="!isLoading && errorMessage" class="error">
+    {{ errorMessage }}
+  </p>
+
+  <ng-container *ngIf="!isLoading && album; else noAlbum">
+    <header class="album-header">
+      <h2 class="album-title">{{ album.title }}</h2>
+      <p *ngIf="album.description" class="album-description">
+        {{ album.description }}
+      </p>
+      <p class="hint">
+        Shared album view — read only
+      </p>
+    </header>
+
+    <div class="album-layout">
+      <!-- TIMELINE -->
+      <section class="timeline">
+        <h3 class="section-heading">Event Timeline</h3>
+
+        <div *ngIf="timelineGroups.length === 0" class="empty-state">
+          No events defined yet.
+        </div>
+
+        <ng-container *ngFor="let group of timelineGroups">
+          <h4 class="timeline-date">
+            {{ group.dateLabel }}
+          </h4>
+
+          <ul class="timeline-list">
+            <li
+              *ngFor="let ev of group.events"
+              [class.selected]="ev.eventId === selectedEventId"
+              class="timeline-event"
+            >
+              <button
+                type="button"
+                class="timeline-event-main"
+                (click)="selectEvent(ev)"
+              >
+                <span class="timeline-dot"></span>
+                <span class="timeline-event-text">
+                  <span class="timeline-event-name">
+                    {{ ev.name }}
+                  </span>
+                  <span *ngIf="ev.location" class="timeline-event-meta">
+                    {{ ev.location }}
+                  </span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </ng-container>
+
+        <button
+          type="button"
+          class="btn-secondary btn-small mt-1"
+          (click)="clearEventSelection()"
+          *ngIf="unassignedPhotos.length > 0"
+        >
+          View unassigned photos
+        </button>
+      </section>
+
+      <!-- PHOTO PANEL -->
+      <section class="photo-panel">
+        <h3 class="section-heading">
+          Photos: {{ selectedEventName }}
+        </h3>
+
+        <div *ngIf="selectedEventId && selectedEventPhotos.length === 0" class="empty-state">
+          No photos for this event yet.
+        </div>
+
+        <div *ngIf="!selectedEventId && unassignedPhotos.length === 0" class="empty-state">
+          Select an event on the left to view its photos.
+        </div>
+
+        <div class="photo-grid">
+          <figure
+            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos"
+            class="photo-card"
+          >
+            <img
+              [src]="imageBaseUrl + p.originalUrl"
+              [alt]="selectedEventId ? selectedEventName : album.title"
+              class="photo-thumb"
+            />
+            <figcaption *ngIf="p.uploadedAt" class="photo-caption">
+              {{ p.uploadedAt | date: 'short' }}
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+
+  <ng-template #noAlbum>
+    <div *ngIf="!isLoading && !album && !errorMessage" class="empty-state">
+      Album not found or no longer shared.
+    </div>
+  </ng-template>
+</div>

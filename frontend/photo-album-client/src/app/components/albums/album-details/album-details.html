@@ -149,6 +149,46 @@
 
   <hr class="divider" />
 
+  <!-- SHARE SECTION -->
+  <section class="share-section">
+    <h3 class="section-heading">Share this album</h3>
+
+    <p *ngIf="shareError" class="error">
+      {{ shareError }}
+    </p>
+
+    <div *ngIf="!shareUrl">
+      <p>
+        Create a shareable link so friends and family can view this album
+        without logging in.
+      </p>
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="generateShareLink()"
+        [disabled]="isLoadingShare"
+      >
+        {{ isLoadingShare ? 'Creating link…' : 'Create share link' }}
+      </button>
+    </div>
+
+    <div *ngIf="shareUrl" class="share-link-box">
+      <p class="hint">
+        Share this link with others:
+      </p>
+      <input
+        type="text"
+        [value]="shareUrl"
+        readonly
+        class="share-input"
+        (click)="$event.target.select()"
+      />
+    </div>
+  </section>
+
+
+  <hr class="divider" />
+
   <!-- ADD EVENT -->
   <section class="add-event-section">
     <h3 class="section-heading">Add a new event</h3>

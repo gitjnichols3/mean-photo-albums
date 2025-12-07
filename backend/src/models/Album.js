@@ -47,7 +47,13 @@ const albumSchema = new mongoose.Schema(
     events: {
       type: [eventSchema],
       default: [],
+    },
+    shareSlug: {
+      type: String,
+      unique: true,
+      sparse: true, // allows many albums without shareSlug
     }
+
   },
   {
     timestamps: true, // adds createdAt and updatedAt

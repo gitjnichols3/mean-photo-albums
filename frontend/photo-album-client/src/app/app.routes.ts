@@ -7,6 +7,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/auth/login/login').then(m => m.Login)
   },
+
+    {
+    path: 'share/:slug',
+    loadComponent: () =>
+      import('./components/public/share-album/share-album.component').then(
+        (m) => m.ShareAlbumComponent
+      ),
+  },
+
   {
     path: 'albums',
     loadComponent: () =>
@@ -24,13 +33,7 @@ export const routes: Routes = [
       import('./components/albums/album-details/album-details')
         .then(m => m.AlbumDetailsComponent)
   },
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
-  },
-  {
-    path: '**',
-    redirectTo: 'login'
-  }
+  { path: '', redirectTo: 'albums', pathMatch: 'full' },
+  { path: '**', redirectTo: 'login' },
+
 ];

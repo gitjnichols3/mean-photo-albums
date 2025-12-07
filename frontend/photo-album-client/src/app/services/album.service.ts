@@ -201,5 +201,14 @@ updateAlbum(id: string, update: Partial<Album>): Observable<Album> {
   );
 }
 
+  // Create or fetch the shareSlug for an album
+  getShareLink(albumId: string) {
+    return this.http.post<{ shareSlug: string }>(
+      `${this.baseUrl}/${albumId}/share`,
+      {},
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
 
 }

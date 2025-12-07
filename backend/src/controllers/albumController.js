@@ -1,5 +1,8 @@
 const Album = require('../models/Album');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const Photo = require('../models/Photo');
+
 
 const createAlbum = async (req, res) => {
   try {
@@ -279,6 +282,67 @@ const deleteAlbum = async (req, res) => {
   }
 };
 
+const getOrCreateShareLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const album = await Album.findOne({
+      _id: id,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found or not authorized' });
+    }
+
+    // If it already has a shareSlug, just return it
+    if (album.shareSlug) {
+      const shareSlug = album.shareSlug;
+      return res.json({ shareSlug });
+    }
+
+    // Generate a unique random slug
+    let slug;
+    let exists = true;
+
+    while (exists) {
+      slug = crypto.randomBytes(6).toString('hex'); // e.g. "a3f9c1d2e4b5"
+      exists = await Album.findOne({ shareSlug: slug });
+    }
+
+    album.shareSlug = slug;
+    await album.save();
+
+    res.json({ shareSlug: slug });
+  } catch (err) {
+    console.error('Error in getOrCreateShareLink:', err);
+    res.status(500).json({ message: 'Failed to create share link' });
+  }
+};
+const getPublicAlbumBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const album = await Album.findOne({ shareSlug: slug }).lean();
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found' });
+    }
+
+    // Fetch photos for this album
+    const photos = await Photo.find({ albumId: album._id }).lean();
+
+    // Optionally strip internal fields
+    const { ownerId, ...publicAlbum } = album;
+
+    res.json({ album: publicAlbum, photos });
+  } catch (err) {
+    console.error('Error in getPublicAlbumBySlug:', err);
+    res.status(500).json({ message: 'Failed to load shared album' });
+  }
+};
+
+
 
 
 module.exports = {
@@ -290,6 +354,8 @@ module.exports = {
   addEventToAlbum,
   updateEventInAlbum,
   deleteEventFromAlbum,
+  getOrCreateShareLink,
+  getPublicAlbumBySlug,
 };
 
 

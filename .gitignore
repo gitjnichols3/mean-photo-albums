@@ -18,3 +18,6 @@ dist/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# user stored files
+backend/uploads/

@@ -12,6 +12,8 @@ const connectDB = require('./config/db');        // 2️⃣ require AFTER dotenv
 const authRoutes = require('./routes/authRoutes');
 const albumRoutes = require('./routes/albumRoutes');
 const photoRoutes = require('./routes/photoRoutes');
+const publicRoutes = require('./routes/publicRoutes');
+
 
 connectDB(); // 3️⃣ connect to MongoDB
 
@@ -29,6 +31,8 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/albums', albumRoutes);
 app.use('/api/photos', photoRoutes);
+app.use('/api/public', publicRoutes);
+
 
 // Health check
 app.get('/api/health', (req, res) => {

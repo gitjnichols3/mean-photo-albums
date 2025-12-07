@@ -263,3 +263,19 @@
 .add-event-section {
   max-width: 420px;
 }
+
+.share-section {
+  margin-bottom: 1.5rem;
+}
+
+.share-link-box {
+  max-width: 480px;
+}
+
+.share-input {
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
