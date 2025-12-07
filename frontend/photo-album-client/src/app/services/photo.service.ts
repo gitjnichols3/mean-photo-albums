@@ -24,13 +24,15 @@ export class PhotoService {
     private authService: AuthService
   ) {}
 
-  // Only add Authorization; let the browser set Content-Type for FormData
+  // Build headers with JWT if available
   private getAuthHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
     let headers = new HttpHeaders();
+
+    const token = this.authService.getToken();
     if (token) {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
+
     return headers;
   }
 
@@ -60,5 +62,13 @@ export class PhotoService {
         { headers: this.getAuthHeaders() }
       )
       .pipe(map((res) => res.photos));
+  }
+
+  // ✅ NEW: delete photo by id
+  deletePhoto(photoId: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.baseUrl}/${photoId}`,
+      { headers: this.getAuthHeaders() }
+    );
   }
 }

@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Photo = require('../models/Photo');
 const Album = require('../models/Album');
 
@@ -81,9 +83,57 @@ const getPhotosForAlbum = async (req, res) => {
   }
 };
 
+const deletePhoto = async (req, res) => {
+  try {
+    const { photoId } = req.params;
+
+    if (!photoId) {
+      return res.status(400).json({ message: 'photoId is required' });
+    }
+
+    // Find the photo
+    const photo = await Photo.findById(photoId);
+    if (!photo) {
+      return res.status(404).json({ message: 'Photo not found' });
+    }
+
+    // Verify album belongs to this user
+    const album = await Album.findOne({
+      _id: photo.albumId,
+      ownerId: req.user.id,
+    });
+
+    if (!album) {
+      return res.status(403).json({ message: 'Not authorized to delete this photo' });
+    }
+
+    // Build file path
+    const filePath = path.join(
+      __dirname,
+      '../../uploads',
+      path.basename(photo.originalUrl)
+    );
+
+    // Delete file from disk if it exists
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Delete from database
+    await photo.deleteOne();
+
+    res.json({ message: 'Photo deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting photo:', err);
+    res.status(500).json({ message: 'Failed to delete photo' });
+  }
+};
+
 
 module.exports = {
   uploadPhoto,
   getPhotosForAlbum,
+  deletePhoto,
 };
+
 

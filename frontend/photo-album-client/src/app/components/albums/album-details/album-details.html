@@ -104,6 +104,14 @@
               [alt]="selectedEventId ? selectedEventName : a.title"
               class="photo-thumb"
             />
+            <button
+              type="button"
+              class="btn-link btn-delete"
+              (click)="deletePhoto(p)"
+            >
+              Delete
+            </button>
+
             <figcaption *ngIf="p.uploadedAt" class="photo-caption">
               {{ p.uploadedAt | date: 'short' }}
             </figcaption>

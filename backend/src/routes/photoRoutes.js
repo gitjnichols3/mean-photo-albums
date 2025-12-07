@@ -3,7 +3,8 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
-const { uploadPhoto, getPhotosForAlbum } = require('../controllers/photoController');
+const { uploadPhoto, getPhotosForAlbum, deletePhoto } = require('../controllers/photoController');
+
 
 // @route POST /api/photos/upload
 // @desc  Upload a photo to an album/event
@@ -23,5 +24,15 @@ router.get(
   authMiddleware,
   getPhotosForAlbum
 );
+
+// @route DELETE /api/photos/:photoId
+// @desc  Delete a photo
+// @access Private
+router.delete(
+  '/:photoId',
+  authMiddleware,
+  deletePhoto
+);
+
 
 module.exports = router;

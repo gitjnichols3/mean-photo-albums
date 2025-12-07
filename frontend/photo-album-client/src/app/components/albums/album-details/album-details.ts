@@ -334,4 +334,23 @@ export class AlbumDetailsComponent implements OnInit {
   trackEvent(index: number, ev: any): string {
     return ev.eventId || index.toString();
   }
+  deletePhoto(p: Photo): void {
+    const confirmed = window.confirm('Delete this photo permanently?');
+
+    if (!confirmed) return;
+
+    this.photoService.deletePhoto(p._id).subscribe({
+      next: () => {
+        this.photos = this.photos.filter((photo) => photo._id !== p._id);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[AlbumDetails] Error deleting photo', err);
+        this.photoError = 'Failed to delete photo';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+
 }
