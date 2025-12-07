@@ -20,3 +20,117 @@ label {
   display: inline-block;
   min-width: 80px;
 }
+/* Photo viewer modal (lightbox) */
+
+.photo-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 900;
+  animation: viewer-backdrop-fade 150ms ease-out;
+}
+
+
+.photo-viewer-modal {
+  position: fixed;
+  inset: 0;                        /* take full screen */
+  z-index: 901;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.photo-viewer-body {
+  background: transparent;        /* ✅ removes white frame */
+  padding: 0;                      /* ✅ lets image grow */
+  max-width: 100vw;
+  max-height: 100vh;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  pointer-events: auto;
+}
+
+.photo-viewer-image-wrapper {
+  flex: 1;
+  text-align: center;
+}
+
+.photo-viewer-image {
+  max-width: 96vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  animation: viewer-image-zoom 180ms ease-out;
+}
+
+
+
+/* Caption placeholder — visually quiet for now */
+.photo-viewer-caption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #ffffff;                 /* same color as arrows */
+  text-shadow: 0 0 8px black;     /* subtle glow for readability */
+}
+
+
+/* Close button */
+.photo-viewer-close {
+  position: fixed;
+  top: 1rem;
+  right: 1.5rem;
+  border: none;
+  background: transparent;
+  font-size: 2.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #ffffff;
+  z-index: 902;
+}
+
+/* Navigation arrows — high contrast */
+.viewer-nav {
+  position: fixed;                 /* fixed to viewport */
+  top: 50%;                        /* vertically centered */
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 3.5rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  color: #ffffff;                  /* high contrast */
+  text-shadow: 0 0 12px black;     /* glow against dark bg */
+  z-index: 902;
+}
+
+.viewer-nav-prev {
+  left: 1.5rem;                    /* always at left edge */
+}
+
+.viewer-nav-next {
+  right: 1.5rem;                   /* always at right edge */
+}
+
+@keyframes viewer-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes viewer-image-zoom {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

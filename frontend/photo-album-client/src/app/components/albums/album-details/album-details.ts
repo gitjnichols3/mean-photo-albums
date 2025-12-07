@@ -16,6 +16,7 @@ import { environment } from '../../../../environments/environment';
   standalone: true,
   selector: 'app-album-details',
   templateUrl: './album-details.html',
+  styleUrls: ['./album-details.css'],
   imports: [CommonModule, FormsModule],
 })
 export class AlbumDetailsComponent implements OnInit {
@@ -24,12 +25,11 @@ export class AlbumDetailsComponent implements OnInit {
   errorMessage = '';
   albumId: string | null = null;
 
-    // Sharing
+  // Sharing
   shareSlug: string | null = null;
   shareUrl: string | null = null;
   shareError = '';
   isLoadingShare = false;
-
 
   // Add event
   newEventName = '';
@@ -47,6 +47,11 @@ export class AlbumDetailsComponent implements OnInit {
   // Viewing selection (which event’s photos to show)
   selectedEventId: string | '' = '';
   selectedEventName = 'Select an event';
+
+  // Photo viewer modal (lightbox)
+  isPhotoViewerOpen = false;
+  viewerPhotos: Photo[] = [];
+  viewerIndex = 0;
 
   // Base URL for images (strip /api from apiBaseUrl)
   imageBaseUrl = environment.apiBaseUrl.replace(/\/api\/?$/, '');
@@ -186,6 +191,46 @@ export class AlbumDetailsComponent implements OnInit {
   }
 
   // ------------------------
+  // PHOTO VIEWER MODAL (LIGHTBOX)
+  // ------------------------
+
+  openPhotoViewer(startIndex: number): void {
+    // Use whatever list is currently showing in the grid
+    const baseList = this.selectedEventId
+      ? this.selectedEventPhotos
+      : this.unassignedPhotos;
+
+    if (!baseList || baseList.length === 0) {
+      return;
+    }
+
+    this.viewerPhotos = baseList;
+    this.viewerIndex = startIndex;
+    this.isPhotoViewerOpen = true;
+  }
+
+  closePhotoViewer(): void {
+    this.isPhotoViewerOpen = false;
+  }
+
+  get currentViewerPhoto(): Photo | null {
+    if (!this.viewerPhotos.length) return null;
+    return this.viewerPhotos[this.viewerIndex] ?? null;
+  }
+
+  nextViewerPhoto(): void {
+    if (!this.viewerPhotos.length) return;
+    this.viewerIndex = (this.viewerIndex + 1) % this.viewerPhotos.length;
+  }
+
+  prevViewerPhoto(): void {
+    if (!this.viewerPhotos.length) return;
+    this.viewerIndex =
+      (this.viewerIndex - 1 + this.viewerPhotos.length) %
+      this.viewerPhotos.length;
+  }
+
+  // ------------------------
   // PHOTOS
   // ------------------------
 
@@ -230,9 +275,11 @@ export class AlbumDetailsComponent implements OnInit {
 
     for (let i = 0; i < this.selectedFiles.length; i++) {
       const file = this.selectedFiles.item(i);
-      if (file) {
-        uploads$.push(this.photoService.uploadPhoto(this.album._id, file, eventId));
-      }
+      if (!file) continue;
+
+      uploads$.push(
+        this.photoService.uploadPhoto(this.album._id, file, eventId)
+      );
     }
 
     if (uploads$.length === 0) {
@@ -241,16 +288,38 @@ export class AlbumDetailsComponent implements OnInit {
     }
 
     forkJoin(uploads$).subscribe({
-      next: (uploadedPhotos: Photo[]) => {
-        this.photos = [...this.photos, ...uploadedPhotos];
+      next: () => {
         this.isUploading = false;
         this.selectedFiles = null;
-        this.cdr.detectChanges();
+        this.loadPhotos();
       },
       error: (err) => {
         console.error('[AlbumDetails] Error uploading photos', err);
         this.photoError = 'Failed to upload photos';
         this.isUploading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // trackBy for events
+  trackEvent(index: number, ev: any): string {
+    return ev.eventId || index.toString();
+  }
+
+  deletePhoto(p: Photo): void {
+    const confirmed = window.confirm('Delete this photo permanently?');
+
+    if (!confirmed) return;
+
+    this.photoService.deletePhoto(p._id).subscribe({
+      next: () => {
+        this.photos = this.photos.filter((photo) => photo._id !== p._id);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[AlbumDetails] Error deleting photo', err);
+        this.photoError = 'Failed to delete photo';
         this.cdr.detectChanges();
       },
     });
@@ -277,22 +346,17 @@ export class AlbumDetailsComponent implements OnInit {
       return;
     }
 
-    const payload: { name: string; startDate?: string; location?: string } = {
-      name,
-    };
-
+    const payload: any = { name };
     if (date) payload.startDate = date;
     if (location) payload.location = location;
 
     this.albumService.addEventToAlbum(this.albumId, payload).subscribe({
       next: (updatedAlbum) => {
         this.album = updatedAlbum;
-
         this.newEventName = '';
         this.newEventDate = '';
         this.newEventLocation = '';
         this.formError = '';
-
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -304,20 +368,13 @@ export class AlbumDetailsComponent implements OnInit {
   }
 
   deleteEvent(ev: any): void {
-    this.formError = '';
-
-    if (!this.albumId || !ev?.eventId) {
-      this.formError = 'Album or event id is missing';
-      return;
-    }
+    if (!this.albumId || !ev.eventId) return;
 
     const confirmed = window.confirm(
-      `Delete event "${ev.name || ''}"? This cannot be undone.`
+      `Delete event "${ev.name}" and unassign any photos associated with it?`
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     this.albumService.deleteEventFromAlbum(this.albumId, ev.eventId).subscribe({
       next: (updatedAlbum) => {
@@ -338,26 +395,9 @@ export class AlbumDetailsComponent implements OnInit {
     });
   }
 
-  trackEvent(index: number, ev: any): string {
-    return ev.eventId || index.toString();
-  }
-  deletePhoto(p: Photo): void {
-    const confirmed = window.confirm('Delete this photo permanently?');
-
-    if (!confirmed) return;
-
-    this.photoService.deletePhoto(p._id).subscribe({
-      next: () => {
-        this.photos = this.photos.filter((photo) => photo._id !== p._id);
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        console.error('[AlbumDetails] Error deleting photo', err);
-        this.photoError = 'Failed to delete photo';
-        this.cdr.detectChanges();
-      },
-    });
-  }
+  // ------------------------
+  // SHARING
+  // ------------------------
 
   generateShareLink(): void {
     if (!this.album?._id) {
@@ -385,6 +425,4 @@ export class AlbumDetailsComponent implements OnInit {
       },
     });
   }
-
-
 }

@@ -74,7 +74,7 @@
     <!-- PHOTO COLUMN -->
     <section class="photo-panel">
       <h3 class="section-heading">
-        Photos: {{ selectedEventName }}
+        Photos: {{ selectedEventId ? selectedEventName : 'Unassigned photos' }}
       </h3>
 
       <p *ngIf="photoError" class="error">
@@ -96,13 +96,14 @@
 
         <div class="photo-grid">
           <figure
-            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos"
+            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos; let i = index"
             class="photo-card"
           >
             <img
               [src]="imageBaseUrl + p.originalUrl"
               [alt]="selectedEventId ? selectedEventName : a.title"
               class="photo-thumb"
+              (click)="openPhotoViewer(i)"
             />
             <button
               type="button"
@@ -157,11 +158,7 @@
       {{ shareError }}
     </p>
 
-    <div *ngIf="!shareUrl">
-      <p>
-        Create a shareable link so friends and family can view this album
-        without logging in.
-      </p>
+    <div class="share-controls">
       <button
         type="button"
         class="btn-primary"
@@ -180,12 +177,11 @@
         type="text"
         [value]="shareUrl"
         readonly
-        class="share-input"
+        class="share-link-input"
         (click)="$event.target.select()"
       />
     </div>
   </section>
-
 
   <hr class="divider" />
 
@@ -234,6 +230,62 @@
       </button>
     </form>
   </section>
+</div>
+
+<!-- Photo viewer modal (lightbox) -->
+<div
+  class="photo-viewer-backdrop"
+  *ngIf="isPhotoViewerOpen"
+  (click)="closePhotoViewer()"
+></div>
+
+<div
+  class="photo-viewer-modal"
+  *ngIf="isPhotoViewerOpen"
+  (click)="$event.stopPropagation()"
+>
+  <button
+    type="button"
+    class="photo-viewer-close"
+    (click)="closePhotoViewer()"
+  >
+    ×
+  </button>
+
+  <div
+    *ngIf="currentViewerPhoto as photo"
+    class="photo-viewer-body"
+  >
+    <button
+      type="button"
+      class="viewer-nav viewer-nav-prev"
+      (click)="$event.stopPropagation(); prevViewerPhoto()"
+    >
+      ‹
+    </button>
+
+    <div class="photo-viewer-image-wrapper">
+      <img
+        [src]="imageBaseUrl + photo.originalUrl"
+        [alt]="selectedEventId ? selectedEventName : 'Album photo'"
+        class="photo-viewer-image"
+      />
+      <p class="photo-viewer-caption">
+        <span *ngIf="selectedEventId">{{ selectedEventName }}</span>
+        <span *ngIf="photo.uploadedAt">
+          • {{ photo.uploadedAt | date: 'short' }}
+        </span>
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="viewer-nav viewer-nav-next"
+      (click)="$event.stopPropagation(); nextViewerPhoto()"
+    >
+      ›
+    </button>
+  </div>
 </div>
 
 <!-- Fallback loading state -->
