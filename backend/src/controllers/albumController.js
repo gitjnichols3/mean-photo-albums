@@ -1,10 +1,23 @@
+// backend/src/controllers/albumController.js
 const Album = require('../models/Album');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const Photo = require('../models/Photo');
 
+// Small helper to guard against missing auth
+function ensureUser(req, res) {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ message: 'Not authenticated' });
+    return false;
+  }
+  return true;
+}
 
-const createAlbum = async (req, res) => {
+// POST /api/albums
+const createAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const { title, description, events } = req.body;
 
@@ -21,7 +34,7 @@ const createAlbum = async (req, res) => {
         name: event.name,
         startDate: event.startDate || null,
         endDate: event.endDate || null,
-        location: event.location || '',
+        location: event.location || ''
       }));
     }
 
@@ -30,47 +43,53 @@ const createAlbum = async (req, res) => {
       ownerId: req.user.id, // comes from authMiddleware
       title,
       description: description || '',
-      events: normalizedEvents,
+      events: normalizedEvents
     });
 
     await album.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Album created successfully',
-      album,
+      album
     });
   } catch (err) {
-    console.error('Error in createAlbum:', err.message);
-    res.status(500).json({ message: 'Server error while creating album' });
+    return next(err);
   }
 };
 
-const getAlbums = async (req, res) => {
+// GET /api/albums
+const getAlbums = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const userId = req.user.id; // From auth middleware
 
     const albums = await Album.find({ ownerId: userId }).sort({
-      createdAt: -1,
+      createdAt: -1
     });
 
-    res.json({
+    return res.json({
       message: 'Albums retrieved successfully',
-      albums,
+      albums
     });
   } catch (err) {
-    console.error('Error in getAlbums:', err.message);
-    res.status(500).json({ message: 'Server error while fetching albums' });
+    return next(err);
   }
 };
 
-const getAlbumById = async (req, res) => {
+// GET /api/albums/:id
+const getAlbumById = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
 
     // Look up the album AND ensure it belongs to the logged-in user
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -79,17 +98,21 @@ const getAlbumById = async (req, res) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
-    res.json({
+    return res.json({
       message: 'Album retrieved successfully',
-      album,
+      album
     });
   } catch (err) {
-    console.error('Error in getAlbumById:', err.message);
-    res.status(500).json({ message: 'Server error while fetching album' });
+    // CastError (bad ObjectId) will go to errorHandler
+    return next(err);
   }
 };
 
-const updateAlbum = async (req, res) => {
+// PATCH /api/albums/:id
+const updateAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
     const { title, description } = req.body;
@@ -97,7 +120,7 @@ const updateAlbum = async (req, res) => {
     // Find the album owned by the current user
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -115,24 +138,27 @@ const updateAlbum = async (req, res) => {
 
     await album.save();
 
-    res.json({
+    return res.json({
       message: 'Album updated successfully',
-      album,
+      album
     });
   } catch (err) {
-    console.error('Error in updateAlbum:', err.message);
-    res.status(500).json({ message: 'Server error while updating album' });
+    return next(err);
   }
 };
 
-const deleteAlbum = async (req, res) => {
+// DELETE /api/albums/:id
+const deleteAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
 
     // Only delete if owned by current user
     const album = await Album.findOneAndDelete({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -141,19 +167,22 @@ const deleteAlbum = async (req, res) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
-    res.json({
-      message: 'Album deleted successfully',
+    return res.json({
+      message: 'Album deleted successfully'
     });
   } catch (err) {
-    console.error('Error in deleteAlbum:', err.message);
-    res.status(500).json({ message: 'Server error while deleting album' });
+    return next(err);
   }
 };
 
 /**
  * Add an embedded event to an album
+ * POST /api/albums/:id/events
  */
-const addEventToAlbum = async (req, res) => {
+const addEventToAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
     const { name, startDate, endDate, location } = req.body;
@@ -166,7 +195,7 @@ const addEventToAlbum = async (req, res) => {
     // find the album
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -180,38 +209,40 @@ const addEventToAlbum = async (req, res) => {
       name,
       startDate: startDate || null,
       endDate: endDate || null,
-      location: location || '',
+      location: location || ''
     };
 
     album.events.push(newEvent);
 
     await album.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Event added successfully',
       album,
-      event: newEvent,
+      event: newEvent
     });
   } catch (err) {
-    console.error('Error in addEventToAlbum:', err.message);
-    res.status(500).json({ message: 'Server error while adding event' });
+    return next(err);
   }
 };
 
 /**
- * Update an embedded event inside an album
+ * Update an embedded event inside an album by our custom eventId field
+ * PATCH /api/albums/:id/events/:eventId
  */
-// Update an embedded event inside an album by our custom eventId field
-const updateEventInAlbum = async (req, res) => {
+const updateEventInAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
     const eventId = req.params.eventId;
-    const { name, startDate, location } = req.body;
+    const { name, startDate, endDate, location } = req.body;
 
     // Find album owned by the current user
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -221,7 +252,7 @@ const updateEventInAlbum = async (req, res) => {
     }
 
     // IMPORTANT: look up by our custom eventId, not the Mongo _id
-    const idx = album.events.findIndex(ev => ev.eventId === eventId);
+    const idx = album.events.findIndex((ev) => ev.eventId === eventId);
 
     if (idx === -1) {
       return res.status(404).json({ message: 'Event not found' });
@@ -234,28 +265,33 @@ const updateEventInAlbum = async (req, res) => {
     if (startDate !== undefined) {
       album.events[idx].startDate = startDate || null;
     }
+    if (endDate !== undefined) {
+      album.events[idx].endDate = endDate || null;
+    }
     if (location !== undefined) {
       album.events[idx].location = location;
     }
 
     await album.save();
 
-    res.json({
+    return res.json({
       message: 'Event updated successfully',
       album,
-      event: album.events[idx],
+      event: album.events[idx]
     });
   } catch (err) {
-    console.error('Error in updateEventInAlbum:', err);
-    res.status(500).json({ message: 'Server error while updating event' });
+    return next(err);
   }
 };
 
-
 /**
  * Delete an embedded event from an album
+ * DELETE /api/albums/:id/events/:eventId
  */
-const deleteEventFromAlbum = async (req, res) => {
+const deleteEventFromAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const albumId = req.params.id;
     const eventId = req.params.eventId;
@@ -263,7 +299,7 @@ const deleteEventFromAlbum = async (req, res) => {
     // Find the album owned by the current user
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -293,30 +329,27 @@ const deleteEventFromAlbum = async (req, res) => {
     return res.json({
       message: 'Event deleted successfully',
       album,
-      removedEvent,
+      removedEvent
     });
   } catch (err) {
-    console.error('Error in deleteEventFromAlbum:', err.message);
-    return res
-      .status(500)
-      .json({ message: 'Server error while deleting event' });
+    return next(err);
   }
 };
 
+/**
+ * Generate or return an existing share link for an album
+ * GET /api/albums/:id/share
+ */
+const getOrCreateShareLink = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
 
-/**
- * Generate or return an existing share link for an album
- */
-/**
- * Generate or return an existing share link for an album
- */
-const getOrCreateShareLink = async (req, res) => {
   try {
     const albumId = req.params.id;
 
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -329,7 +362,7 @@ const getOrCreateShareLink = async (req, res) => {
     if (album.shareSlug) {
       return res.json({
         message: 'Share link already exists',
-        shareSlug: album.shareSlug,   // <-- key frontend expects
+        shareSlug: album.shareSlug // <-- key frontend expects
       });
     }
 
@@ -340,19 +373,18 @@ const getOrCreateShareLink = async (req, res) => {
 
     return res.json({
       message: 'Share link created successfully',
-      shareSlug: slug,               // <-- key frontend expects
+      shareSlug: slug // <-- key frontend expects
     });
   } catch (err) {
-    console.error('Error in getOrCreateShareLink:', err);
-    res.status(500).json({ message: 'Failed to create share link' });
+    return next(err);
   }
 };
 
-
 /**
  * Public endpoint to load a shared album by slug (no auth)
+ * GET /api/public/albums/:slug
  */
-const getPublicAlbumBySlug = async (req, res) => {
+const getPublicAlbumBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
 
@@ -368,10 +400,9 @@ const getPublicAlbumBySlug = async (req, res) => {
     // Optionally strip internal fields
     const { ownerId, ...publicAlbum } = album;
 
-    res.json({ album: publicAlbum, photos });
+    return res.json({ album: publicAlbum, photos });
   } catch (err) {
-    console.error('Error in getPublicAlbumBySlug:', err);
-    res.status(500).json({ message: 'Failed to load shared album' });
+    return next(err);
   }
 };
 
@@ -385,5 +416,5 @@ module.exports = {
   updateEventInAlbum,
   deleteEventFromAlbum,
   getOrCreateShareLink,
-  getPublicAlbumBySlug,
+  getPublicAlbumBySlug
 };

@@ -6,13 +6,17 @@ const path = require('path');
 
 dotenv.config(); // 1️⃣ load .env first
 
-console.log('MONGO_URI from env:', JSON.stringify(process.env.MONGO_URI));
+//Logged mongo connection string for development
+//console.log('MONGO_URI from env:', JSON.stringify(process.env.MONGO_URI));
 
 const connectDB = require('./config/db');        // 2️⃣ require AFTER dotenv.config
 const authRoutes = require('./routes/authRoutes');
 const albumRoutes = require('./routes/albumRoutes');
 const photoRoutes = require('./routes/photoRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+
+const notFound = require('./middleware/notFound');
+const errorHandler = require('./middleware/errorHandler');
 
 
 connectDB(); // 3️⃣ connect to MongoDB
@@ -38,6 +42,12 @@ app.use('/api/public', publicRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'API is running' });
 });
+
+// 404 handler
+app.use(notFound);
+
+// Central error handler
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

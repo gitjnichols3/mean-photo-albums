@@ -1,10 +1,23 @@
 const fs = require('fs');
 const path = require('path');
-const exifr = require('exifr');           // 👈 NEW
+const exifr = require('exifr');
 const Photo = require('../models/Photo');
 const Album = require('../models/Album');
 
-const uploadPhoto = async (req, res) => {
+// Small helper to guard against missing auth (same pattern as albumController)
+function ensureUser(req, res) {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ message: 'Not authenticated' });
+    return false;
+  }
+  return true;
+}
+
+// POST /api/photos/upload (or whatever route you wired)
+const uploadPhoto = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const { albumId, eventId } = req.body;
 
@@ -20,7 +33,7 @@ const uploadPhoto = async (req, res) => {
     // Check album ownership
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -28,9 +41,6 @@ const uploadPhoto = async (req, res) => {
         .status(404)
         .json({ message: 'Album not found or not authorized' });
     }
-
-    // (Optional for now) verify the event exists in the album
-    // We won’t enforce this yet to keep it simple.
 
     // Try to read EXIF "taken at" date from the uploaded file
     let takenAt = null;
@@ -55,7 +65,7 @@ const uploadPhoto = async (req, res) => {
         req.file?.filename,
         exifErr?.message || exifErr
       );
-      // We silently fall back to uploadedAt
+      // Silently fall back to uploadedAt
     }
 
     // Build the photo document
@@ -65,24 +75,25 @@ const uploadPhoto = async (req, res) => {
       photographerId: req.user.id,
       originalUrl: `/uploads/${req.file.filename}`, // public serving path
       uploadedAt: new Date(),
-      takenAt: takenAt || null, // if EXIF found, use it; else remain null
+      takenAt: takenAt || null // if EXIF found, use it; else remain null
     });
 
     await photo.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Photo uploaded successfully',
-      photo,
+      photo
     });
   } catch (err) {
-    console.error('Error in uploadPhoto:', err.message);
-    res
-      .status(500)
-      .json({ message: 'Server error while uploading photo' });
+    return next(err);
   }
 };
 
-const getPhotosForAlbum = async (req, res) => {
+// GET /api/photos/album/:albumId (or similar)
+const getPhotosForAlbum = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const { albumId } = req.params;
 
@@ -93,7 +104,7 @@ const getPhotosForAlbum = async (req, res) => {
     // Make sure the album belongs to the logged-in user
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -106,16 +117,17 @@ const getPhotosForAlbum = async (req, res) => {
     // for now we keep uploadedAt for consistency.
     const photos = await Photo.find({ albumId }).sort({ uploadedAt: 1 });
 
-    res.json({ photos });
+    return res.json({ photos });
   } catch (err) {
-    console.error('Error in getPhotosForAlbum:', err.message);
-    res
-      .status(500)
-      .json({ message: 'Server error while fetching photos' });
+    return next(err);
   }
 };
 
-const deletePhoto = async (req, res) => {
+// DELETE /api/photos/:photoId
+const deletePhoto = async (req, res, next) => {
+  // Auth guard
+  if (!ensureUser(req, res)) return;
+
   try {
     const { photoId } = req.params;
 
@@ -132,7 +144,7 @@ const deletePhoto = async (req, res) => {
     // Make sure the album belongs to this user
     const album = await Album.findOne({
       _id: photo.albumId,
-      ownerId: req.user.id,
+      ownerId: req.user.id
     });
 
     if (!album) {
@@ -158,15 +170,15 @@ const deletePhoto = async (req, res) => {
     // Delete from database
     await photo.deleteOne();
 
-    res.json({ message: 'Photo deleted successfully' });
+    return res.json({ message: 'Photo deleted successfully' });
   } catch (err) {
-    console.error('Error deleting photo:', err);
-    res.status(500).json({ message: 'Failed to delete photo' });
+    // Invalid ObjectId etc. will bubble to errorHandler
+    return next(err);
   }
 };
 
 module.exports = {
   uploadPhoto,
   getPhotosForAlbum,
-  deletePhoto,
+  deletePhoto
 };

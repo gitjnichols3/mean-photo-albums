@@ -6,7 +6,7 @@ const User = require('../models/User');
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
 
 // --------------------- REGISTER ---------------------
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
@@ -29,7 +29,7 @@ const registerUser = async (req, res) => {
     const user = new User({
       name,
       email: email.toLowerCase(),
-      passwordHash,
+      passwordHash
     });
 
     await user.save();
@@ -39,19 +39,21 @@ const registerUser = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
-      },
+        email: user.email
+      }
     });
   } catch (err) {
     console.error('Error in registerUser:', err);
-    return res
-      .status(500)
-      .json({ message: 'Server error during registration' });
+
+    // Wrap in a friendly error for the client, but keep the original logged
+    const error = new Error('Server error during registration');
+    error.statusCode = 500;
+    return next(error);
   }
 };
 
 // --------------------- LOGIN ---------------------
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   try {
     console.log('Raw req.body in loginUser:', req.body);
 
@@ -96,16 +98,19 @@ const loginUser = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email,
-      },
+        email: user.email
+      }
     });
   } catch (err) {
     console.error('Error in loginUser:', err);
-    return res.status(500).json({ message: 'Server error during login' });
+
+    const error = new Error('Server error during login');
+    error.statusCode = 500;
+    return next(error);
   }
 };
 
 module.exports = {
   registerUser,
-  loginUser,
+  loginUser
 };
