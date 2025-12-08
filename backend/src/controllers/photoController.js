@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const exifr = require('exifr');           // 👈 NEW
 const Photo = require('../models/Photo');
 const Album = require('../models/Album');
 
@@ -19,15 +20,43 @@ const uploadPhoto = async (req, res) => {
     // Check album ownership
     const album = await Album.findOne({
       _id: albumId,
-      ownerId: req.user.id
+      ownerId: req.user.id,
     });
 
     if (!album) {
-      return res.status(404).json({ message: 'Album not found or not authorized' });
+      return res
+        .status(404)
+        .json({ message: 'Album not found or not authorized' });
     }
 
     // (Optional for now) verify the event exists in the album
     // We won’t enforce this yet to keep it simple.
+
+    // Try to read EXIF "taken at" date from the uploaded file
+    let takenAt = null;
+    try {
+      const filePath = path.join(
+        __dirname,
+        '..',
+        '..',
+        'uploads',
+        req.file.filename
+      );
+
+      const exif = await exifr.parse(filePath);
+
+      if (exif) {
+        // Common EXIF date fields: DateTimeOriginal or CreateDate
+        takenAt = exif.DateTimeOriginal || exif.CreateDate || null;
+      }
+    } catch (exifErr) {
+      console.warn(
+        'EXIF parse failed for',
+        req.file?.filename,
+        exifErr?.message || exifErr
+      );
+      // We silently fall back to uploadedAt
+    }
 
     // Build the photo document
     const photo = new Photo({
@@ -36,19 +65,20 @@ const uploadPhoto = async (req, res) => {
       photographerId: req.user.id,
       originalUrl: `/uploads/${req.file.filename}`, // public serving path
       uploadedAt: new Date(),
-      takenAt: null // EXIF comes later
+      takenAt: takenAt || null, // if EXIF found, use it; else remain null
     });
 
     await photo.save();
 
     res.status(201).json({
       message: 'Photo uploaded successfully',
-      photo
+      photo,
     });
-
   } catch (err) {
     console.error('Error in uploadPhoto:', err.message);
-    res.status(500).json({ message: 'Server error while uploading photo' });
+    res
+      .status(500)
+      .json({ message: 'Server error while uploading photo' });
   }
 };
 
@@ -72,6 +102,8 @@ const getPhotosForAlbum = async (req, res) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
+    // You might later decide to sort by takenAt if present;
+    // for now we keep uploadedAt for consistency.
     const photos = await Photo.find({ albumId }).sort({ uploadedAt: 1 });
 
     res.json({ photos });
@@ -79,7 +111,7 @@ const getPhotosForAlbum = async (req, res) => {
     console.error('Error in getPhotosForAlbum:', err.message);
     res
       .status(500)
-      .json({ message: 'Server error while loading photos' });
+      .json({ message: 'Server error while fetching photos' });
   }
 };
 
@@ -91,26 +123,30 @@ const deletePhoto = async (req, res) => {
       return res.status(400).json({ message: 'photoId is required' });
     }
 
-    // Find the photo
     const photo = await Photo.findById(photoId);
+
     if (!photo) {
       return res.status(404).json({ message: 'Photo not found' });
     }
 
-    // Verify album belongs to this user
+    // Make sure the album belongs to this user
     const album = await Album.findOne({
       _id: photo.albumId,
       ownerId: req.user.id,
     });
 
     if (!album) {
-      return res.status(403).json({ message: 'Not authorized to delete this photo' });
+      return res
+        .status(403)
+        .json({ message: 'Not authorized to delete this photo' });
     }
 
     // Build file path
     const filePath = path.join(
       __dirname,
-      '../../uploads',
+      '..',
+      '..',
+      'uploads',
       path.basename(photo.originalUrl)
     );
 
@@ -129,11 +165,8 @@ const deletePhoto = async (req, res) => {
   }
 };
 
-
 module.exports = {
   uploadPhoto,
   getPhotosForAlbum,
   deletePhoto,
 };
-
-

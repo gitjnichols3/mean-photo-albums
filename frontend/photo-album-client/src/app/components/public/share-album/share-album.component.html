@@ -1,6 +1,5 @@
 <div class="album-details">
-  <!-- ALWAYS show the raw flags so we can visually confirm -->
-  <!-- debug: isLoading={{ isLoading }} albumLoaded={{ !!album }} -->
+  <!-- Shared album view (read only) -->
   <div *ngIf="isLoading" class="loading">
     Loading album...
   </div>
@@ -75,26 +74,48 @@
           Photos: {{ selectedEventName }}
         </h3>
 
-        <div *ngIf="selectedEventId && selectedEventPhotos.length === 0" class="empty-state">
+        <div
+          *ngIf="selectedEventId && selectedEventPhotos.length === 0"
+          class="empty-state"
+        >
           No photos for this event yet.
         </div>
 
-        <div *ngIf="!selectedEventId && unassignedPhotos.length === 0" class="empty-state">
+        <div
+          *ngIf="!selectedEventId && unassignedPhotos.length === 0"
+          class="empty-state"
+        >
           Select an event on the left to view its photos.
         </div>
 
-        <div class="photo-grid">
+        <div
+          class="photo-grid"
+          *ngIf="
+            (selectedEventId && selectedEventPhotos.length > 0) ||
+            (!selectedEventId && unassignedPhotos.length > 0)
+          "
+        >
           <figure
-            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos"
+            *ngFor="
+              let p of selectedEventId ? selectedEventPhotos : unassignedPhotos;
+              let i = index
+            "
             class="photo-card"
           >
             <img
               [src]="imageBaseUrl + p.originalUrl"
               [alt]="selectedEventId ? selectedEventName : album.title"
               class="photo-thumb"
+              (click)="openPhotoViewer(i)"
             />
-            <figcaption *ngIf="p.uploadedAt" class="photo-caption">
-              {{ p.uploadedAt | date: 'short' }}
+
+            <figcaption *ngIf="p.takenAt || p.uploadedAt" class="photo-caption">
+              <ng-container *ngIf="p.takenAt; else uploadedDatePublic">
+                {{ p.takenAt | date: 'short' }}
+              </ng-container>
+              <ng-template #uploadedDatePublic>
+                Uploaded at: {{ p.uploadedAt | date: 'short' }}
+              </ng-template>
             </figcaption>
           </figure>
         </div>
@@ -107,4 +128,74 @@
       Album not found or no longer shared.
     </div>
   </ng-template>
+
+  <!-- Photo viewer modal (lightbox) -->
+  <div
+    class="photo-viewer-backdrop"
+    *ngIf="isPhotoViewerOpen"
+    (click)="closePhotoViewer()"
+  ></div>
+
+  <div
+    class="photo-viewer-modal"
+    *ngIf="isPhotoViewerOpen"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="photo-viewer-close"
+      (click)="closePhotoViewer()"
+    >
+      ×
+    </button>
+
+    <div
+      *ngIf="currentViewerPhoto as photo"
+      class="photo-viewer-body"
+    >
+      <button
+        type="button"
+        class="viewer-nav viewer-nav-prev"
+        (click)="$event.stopPropagation(); prevViewerPhoto()"
+      >
+        ‹
+      </button>
+
+      <div class="photo-viewer-image-wrapper">
+        <img
+          [src]="imageBaseUrl + photo.originalUrl"
+          [alt]="selectedEventId ? selectedEventName : album?.title"
+          class="photo-viewer-image"
+        />
+
+        <p class="photo-viewer-caption">
+          Photo {{ viewerIndex + 1 }} of {{ viewerPhotos.length }}
+          <span *ngIf="selectedEventId">
+            • {{ selectedEventName }}
+          </span>
+          <span *ngIf="photo.takenAt || photo.uploadedAt">
+            •
+            <ng-container *ngIf="photo.takenAt; else uploadedDateViewerPublic">
+              {{ photo.takenAt | date: 'short' }}
+            </ng-container>
+            <ng-template #uploadedDateViewerPublic>
+              Uploaded at: {{ photo.uploadedAt | date: 'short' }}
+            </ng-template>
+          </span>
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="viewer-nav viewer-nav-next"
+        (click)="$event.stopPropagation(); nextViewerPhoto()"
+      >
+        ›
+      </button>
+
+      <div class="photo-viewer-hint">
+        ← → to navigate • Esc to close
+      </div>
+    </div>
+  </div>
 </div>

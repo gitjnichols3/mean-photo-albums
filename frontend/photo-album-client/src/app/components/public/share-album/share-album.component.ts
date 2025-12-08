@@ -1,6 +1,6 @@
 // src/app/components/public/share-album/share-album.component.ts
 
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -38,9 +38,16 @@ export class ShareAlbumComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
 
+  // Which event’s photos are shown on the right
   selectedEventId: string | '' = '';
   selectedEventName = 'Select an event';
 
+  // Photo viewer modal (lightbox)
+  isPhotoViewerOpen = false;
+  viewerPhotos: Photo[] = [];
+  viewerIndex = 0;
+
+  // Base URL for images (strip /api from apiBaseUrl)
   imageBaseUrl = environment.apiBaseUrl.replace(/\/api\/?$/, '');
 
   constructor(
@@ -72,6 +79,10 @@ export class ShareAlbumComponent implements OnInit {
           this.album = album;
           this.photos = photos || [];
           this.isLoading = false;
+
+          // Default view: unassigned photos
+          this.clearEventSelection();
+
           this.cdr.detectChanges();
         },
         error: (err: any) => {
@@ -142,11 +153,21 @@ export class ShareAlbumComponent implements OnInit {
   selectEvent(ev: PublicEvent): void {
     this.selectedEventId = ev.eventId;
     this.selectedEventName = ev.name || 'Selected event';
+
+    // Changing context resets the viewer
+    this.isPhotoViewerOpen = false;
+    this.viewerPhotos = [];
+    this.viewerIndex = 0;
   }
 
   clearEventSelection(): void {
     this.selectedEventId = '';
     this.selectedEventName = 'Unassigned photos';
+
+    // Also reset viewer
+    this.isPhotoViewerOpen = false;
+    this.viewerPhotos = [];
+    this.viewerIndex = 0;
   }
 
   get selectedEventPhotos(): Photo[] {
@@ -156,5 +177,75 @@ export class ShareAlbumComponent implements OnInit {
 
   get unassignedPhotos(): Photo[] {
     return this.photos.filter((p) => !p.eventId);
+  }
+
+  // ------------------------
+  // PHOTO VIEWER MODAL (LIGHTBOX)
+  // ------------------------
+
+  openPhotoViewer(startIndex: number): void {
+    const baseList = this.selectedEventId
+      ? this.selectedEventPhotos
+      : this.unassignedPhotos;
+
+    if (!baseList || baseList.length === 0) {
+      return;
+    }
+
+    this.viewerPhotos = baseList;
+    this.viewerIndex = startIndex;
+    this.isPhotoViewerOpen = true;
+
+    // Lock background scroll while viewer is open
+    document.body.style.overflow = 'hidden';
+  }
+
+  closePhotoViewer(): void {
+    this.isPhotoViewerOpen = false;
+    // Restore background scroll
+    document.body.style.overflow = '';
+  }
+
+  get currentViewerPhoto(): Photo | null {
+    if (!this.viewerPhotos.length) return null;
+    return this.viewerPhotos[this.viewerIndex] ?? null;
+  }
+
+  nextViewerPhoto(): void {
+    if (!this.viewerPhotos.length) return;
+    this.viewerIndex = (this.viewerIndex + 1) % this.viewerPhotos.length;
+  }
+
+  prevViewerPhoto(): void {
+    if (!this.viewerPhotos.length) return;
+    this.viewerIndex =
+      (this.viewerIndex - 1 + this.viewerPhotos.length) %
+      this.viewerPhotos.length;
+  }
+
+  // Keyboard navigation for the photo viewer
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent): void {
+    if (!this.isPhotoViewerOpen) return;
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'Right':
+        event.preventDefault();
+        this.nextViewerPhoto();
+        break;
+      case 'ArrowLeft':
+      case 'Left':
+        event.preventDefault();
+        this.prevViewerPhoto();
+        break;
+      case 'Escape':
+      case 'Esc':
+        event.preventDefault();
+        this.closePhotoViewer();
+        break;
+      default:
+        break;
+    }
   }
 }

@@ -4,8 +4,11 @@ export interface Album {
   ownerId: string;
   title: string;
   description?: string;
-  coverImageUrl?: string;
+
+  location?: string;
+
+  events: any[];
   createdAt?: string;
   updatedAt?: string;
-  events: any[]; // or a proper Event[] later
 }
+

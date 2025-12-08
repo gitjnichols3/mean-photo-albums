@@ -26,6 +26,7 @@
 
       <ng-container *ngFor="let group of timelineGroups">
         <h4 class="timeline-date">
+          <span class="timeline-date-dot"></span>
           {{ group.dateLabel }}
         </h4>
 
@@ -35,29 +36,33 @@
             [class.selected]="ev.eventId === selectedEventId"
             class="timeline-event"
           >
-            <button
-              type="button"
-              class="timeline-event-main"
-              (click)="selectEventForViewing(ev)"
-            >
-              <span class="timeline-dot"></span>
-              <span class="timeline-event-text">
+            <div class="timeline-event-main">
+              <button
+                type="button"
+                class="timeline-event-name-btn"
+                (click)="selectEventForViewing(ev)"
+              >
                 <span class="timeline-event-name">
-                  {{ ev.name }}
+                  {{ ev.name || 'Untitled event' }}
                 </span>
-                <span *ngIf="ev.location" class="timeline-event-meta">
-                  {{ ev.location }}
-                </span>
-              </span>
-            </button>
+              </button>
 
-            <button
-              type="button"
-              class="btn-link btn-delete"
-              (click)="deleteEvent(ev)"
-            >
-              Delete
-            </button>
+              <button
+                type="button"
+                class="btn-link pill-action"
+                (click)="editEvent(ev)"
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="btn-link pill-action"
+                (click)="deleteEvent(ev)"
+              >
+                Delete
+              </button>
+            </div>
           </li>
         </ul>
       </ng-container>
@@ -86,17 +91,32 @@
       </div>
 
       <div *ngIf="!isLoadingPhotos">
-        <div *ngIf="selectedEventId && selectedEventPhotos.length === 0" class="empty-state">
+        <div
+          *ngIf="selectedEventId && selectedEventPhotos.length === 0"
+          class="empty-state"
+        >
           No photos for this event yet.
         </div>
 
-        <div *ngIf="!selectedEventId && unassignedPhotos.length === 0" class="empty-state">
+        <div
+          *ngIf="!selectedEventId && unassignedPhotos.length === 0"
+          class="empty-state"
+        >
           No unassigned photos.
         </div>
 
-        <div class="photo-grid">
+        <div
+          class="photo-grid"
+          *ngIf="
+            (selectedEventId && selectedEventPhotos.length > 0) ||
+            (!selectedEventId && unassignedPhotos.length > 0)
+          "
+        >
           <figure
-            *ngFor="let p of selectedEventId ? selectedEventPhotos : unassignedPhotos; let i = index"
+            *ngFor="
+              let p of selectedEventId ? selectedEventPhotos : unassignedPhotos;
+              let i = index
+            "
             class="photo-card"
           >
             <img
@@ -105,22 +125,33 @@
               class="photo-thumb"
               (click)="openPhotoViewer(i)"
             />
-            <button
-              type="button"
-              class="btn-link btn-delete"
-              (click)="deletePhoto(p)"
-            >
-              Delete
-            </button>
 
-            <figcaption *ngIf="p.uploadedAt" class="photo-caption">
-              {{ p.uploadedAt | date: 'short' }}
-            </figcaption>
+            <div class="photo-meta-row">
+              <button
+                type="button"
+                class="btn-link btn-delete"
+                (click)="deletePhoto(p)"
+              >
+                Delete
+              </button>
+
+              <figcaption
+                *ngIf="p.takenAt || p.uploadedAt"
+                class="photo-caption"
+              >
+                <ng-container *ngIf="p.takenAt; else uploadedDate">
+                  {{ p.takenAt | date: 'short' }}
+                </ng-container>
+                <ng-template #uploadedDate>
+                  Uploaded at: {{ p.uploadedAt | date: 'short' }}
+                </ng-template>
+              </figcaption>
+            </div>
           </figure>
         </div>
       </div>
 
-      <!-- Upload form -->
+      <!-- Upload form (column 2, under thumbnails) -->
       <form (ngSubmit)="onUploadPhotos($event)" class="photo-upload-form">
         <p class="hint">
           Uploads are attached to the currently selected event.
@@ -150,46 +181,13 @@
 
   <hr class="divider" />
 
-  <!-- SHARE SECTION -->
-  <section class="share-section">
-    <h3 class="section-heading">Share this album</h3>
+  <!-- ADD EVENT FORM -->
+  <section class="add-event-panel">
+    <h3 class="section-heading">
+      Add a new event
+    </h3>
 
-    <p *ngIf="shareError" class="error">
-      {{ shareError }}
-    </p>
-
-    <div class="share-controls">
-      <button
-        type="button"
-        class="btn-primary"
-        (click)="generateShareLink()"
-        [disabled]="isLoadingShare"
-      >
-        {{ isLoadingShare ? 'Creating link…' : 'Create share link' }}
-      </button>
-    </div>
-
-    <div *ngIf="shareUrl" class="share-link-box">
-      <p class="hint">
-        Share this link with others:
-      </p>
-      <input
-        type="text"
-        [value]="shareUrl"
-        readonly
-        class="share-link-input"
-        (click)="$event.target.select()"
-      />
-    </div>
-  </section>
-
-  <hr class="divider" />
-
-  <!-- ADD EVENT -->
-  <section class="add-event-section">
-    <h3 class="section-heading">Add a new event</h3>
-
-    <form (ngSubmit)="addEvent()" class="add-event-form">
+    <form (ngSubmit)="addEvent()" #eventForm="ngForm" class="event-form">
       <div class="form-row">
         <label for="newName" class="form-label">Name</label>
         <input
@@ -225,10 +223,56 @@
         {{ formError }}
       </p>
 
-      <button type="submit" class="btn-primary">
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="eventForm.invalid"
+      >
         Add event
       </button>
     </form>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- SHARE LINK SECTION -->
+  <section class="share-panel">
+    <h3 class="section-heading">
+      Share this album
+    </h3>
+
+    <p class="hint">
+      Create a special share link that shows a read-only view of this album
+      and its photos.
+    </p>
+
+    <p *ngIf="shareError" class="error">
+      {{ shareError }}
+    </p>
+
+    <div class="share-controls">
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="generateShareLink()"
+        [disabled]="isLoadingShare"
+      >
+        {{ isLoadingShare ? 'Creating link…' : 'Create share link' }}
+      </button>
+    </div>
+
+    <div *ngIf="shareUrl" class="share-link-box">
+      <p class="hint">
+        Share this link with others:
+      </p>
+      <input
+        type="text"
+        [value]="shareUrl"
+        readonly
+        class="share-link-input"
+        (click)="$event.target.select()"
+      />
+    </div>
   </section>
 </div>
 
@@ -249,7 +293,7 @@
     class="photo-viewer-close"
     (click)="closePhotoViewer()"
   >
-    ×
+    ✕
   </button>
 
   <div
@@ -270,10 +314,20 @@
         [alt]="selectedEventId ? selectedEventName : 'Album photo'"
         class="photo-viewer-image"
       />
+
       <p class="photo-viewer-caption">
-        <span *ngIf="selectedEventId">{{ selectedEventName }}</span>
-        <span *ngIf="photo.uploadedAt">
-          • {{ photo.uploadedAt | date: 'short' }}
+        Photo {{ viewerIndex + 1 }} of {{ viewerPhotos.length }}
+        <span *ngIf="selectedEventId">
+          • {{ selectedEventName }}
+        </span>
+        <span *ngIf="photo.takenAt || photo.uploadedAt">
+          •
+          <ng-container *ngIf="photo.takenAt; else uploadedDateViewer">
+            {{ photo.takenAt | date: 'short' }}
+          </ng-container>
+          <ng-template #uploadedDateViewer>
+            Uploaded at: {{ photo.uploadedAt | date: 'short' }}
+          </ng-template>
         </span>
       </p>
     </div>
@@ -285,6 +339,10 @@
     >
       ›
     </button>
+
+    <div class="photo-viewer-hint">
+      ← → to navigate • Esc to close
+    </div>
   </div>
 </div>
 
