@@ -1,15 +1,25 @@
 <div class="albums-page">
   <div class="albums-header">
-    <h2>Your Albums</h2>
+
+<div style="padding-bottom: 20px;">
+  <p class="fs-5 fw-bold mb-0">
+    Hello, {{ username }}!
+  </p>
+</div>
+
+
+
+
+
+<h2 style="margin-top: 20px;">Your Albums</h2>
+
 
     <div class="albums-header-actions">
       <button type="button" [routerLink]="['/albums/create']">
         + Create New Album
       </button>
 
-      <button type="button" (click)="logout()">
-        Logout
-      </button>
+
     </div>
   </div>
 

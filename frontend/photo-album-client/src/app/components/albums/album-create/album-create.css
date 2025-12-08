@@ -7,3 +7,26 @@
   color: #b00020;
   font-size: 0.85rem;
 }
+/* Create album page styling */
+.create-album-page {
+  padding-top: 0.5rem;
+}
+
+.create-album-card {
+  border-radius: 0.75rem;
+}
+
+/* Slightly softer card for this page */
+.create-album-card .card-body {
+  padding: 1.75rem;
+}
+
+@media (max-width: 576px) {
+  .create-album-page {
+    padding-top: 0.25rem;
+  }
+
+  .create-album-card .card-body {
+    padding: 1.25rem;
+  }
+}

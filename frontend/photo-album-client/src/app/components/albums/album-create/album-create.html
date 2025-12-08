@@ -1,36 +1,94 @@
-<h2>Create New Album</h2>
+<!-- albums-create.html (replace your current content with this) -->
 
-<form (ngSubmit)="onSubmit()" #albumForm="ngForm" novalidate>
-  <div>
-    <label for="title">Title</label>
-    <input
-      id="title"
-      name="title"
-      type="text"
-      required
-      [(ngModel)]="title"
-    />
+<div class="create-album-page">
+  <!-- Page header / back link -->
+  <div class="d-flex align-items-center mb-4">
+    <button
+      type="button"
+      class="btn btn-link p-0"
+      routerLink="/albums"
+    >
+      ← Back to albums
+    </button>
   </div>
 
-  <div>
-    <label for="description">Description</label>
-    <textarea
-      id="description"
-      name="description"
-      rows="3"
-      [(ngModel)]="description"
-    ></textarea>
+
+
+  <!-- Centered card -->
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7 col-xl-6">
+      <div class="card shadow-sm create-album-card">
+        <div class="card-body p-4">
+
+          <h1 class="h4 mb-3">Create a new album</h1>
+          <p class="text-muted small mb-4">
+            Give your album a clear title and optional description. You can add events and photos after creating it.
+          </p>
+
+          <form (ngSubmit)="onSubmit()" #albumForm="ngForm" novalidate>
+            <!-- Title -->
+            <div class="mb-3">
+              <label for="title" class="form-label">
+                Album title
+              </label>
+              <input
+                id="title"
+                name="title"
+                type="text"
+                class="form-control"
+                required
+                [(ngModel)]="title"
+              />
+              <div class="form-text">
+                e.g., “Summer Road Trip 2025” or “Grandma’s 80th Birthday”
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label for="description" class="form-label">
+                Description <span class="text-muted small">(optional)</span>
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows="3"
+                class="form-control"
+                [(ngModel)]="description"
+              ></textarea>
+            </div>
+
+            <!-- Error message -->
+            <div *ngIf="formError" class="alert alert-danger mt-3">
+              {{ formError }}
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="cancel()"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+                [disabled]="isSubmitting"
+              >
+                {{ isSubmitting ? 'Saving...' : 'Create album' }}
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      <p class="text-center text-muted small mt-3">
+        You can add events, upload photos, and share the album once it’s created.
+      </p>
+    </div>
   </div>
-
-  <p *ngIf="formError" class="error">
-    {{ formError }}
-  </p>
-
-  <button type="submit" [disabled]="isSubmitting">
-    {{ isSubmitting ? 'Saving...' : 'Create Album' }}
-  </button>
-
-  <button type="button" (click)="cancel()">
-    Cancel
-  </button>
-</form>
+</div>

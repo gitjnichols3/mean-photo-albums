@@ -27,10 +27,27 @@
   align-items: flex-start;
 }
 
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.greeting-spacing {
+  margin-bottom: 20px;
+}
+
+
 /* Stack columns on small screens */
 @media (max-width: 768px) {
   .album-layout {
     grid-template-columns: 1fr;
+  }
+
+  .keyboard-controls,
+  .modal-keyboard-hint,
+  .keyboard-hint {
+    display: none;
   }
 }
 
@@ -387,4 +404,43 @@
 
 .viewer-nav-next {
   right: 1.5rem;                   /* always at right edge */
+}
+
+
+
+/* Small phones: tighten header spacing and text a bit */
+@media (max-width: 576px) {
+  header.navbar {
+    padding: 0.5rem 1rem;
+  }
+
+  header.navbar img[alt="Share the Moment logo"] {
+    height: 64px; /* slightly smaller logo on tiny screens */
+  }
+
+  header.navbar .fs-3 {
+    font-size: 1.5rem; /* keep title readable but not huge */
+  }
+
+  header.navbar .fs-6 {
+    font-size: 0.8rem;
+  }
+
+  /* Stack brand and buttons a bit cleaner */
+  header .container-fluid {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  header .ms-auto {
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+
+  .keyboard-controls,
+  .modal-keyboard-hint,
+  .keyboard-hint {
+    display: none;
+  }
 }

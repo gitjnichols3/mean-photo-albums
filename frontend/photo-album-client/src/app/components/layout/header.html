@@ -1,0 +1,76 @@
+<!-- src/app/components/layout/header.html -->
+<header class="navbar navbar-expand-lg navbar-dark bg-dark px-4 py-3 shadow-sm">
+  <div class="container-fluid d-flex align-items-center">
+
+    <!-- BRAND: LOGO + TEXT -->
+    <div class="d-flex align-items-center gap-4">
+      <!-- Logo image (ONLY this is made larger) -->
+      <img
+        src="/assets/logo-mark.png"
+        alt="Share the Moment logo"
+        height="96"
+      />
+
+      <!-- Title + Tagline (TITLE UNCHANGED, TAGLINE SLIGHTLY DIMMED) -->
+      <div class="d-flex flex-column">
+        <span class="fw-bold text-white fs-3">
+          Share the Moment
+        </span>
+        <span class="fs-6 text-white-50">
+          Albums for families, friends, and communities
+        </span>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE NAV -->
+    <div class="ms-auto d-flex align-items-center gap-3">
+
+      <!-- PUBLIC SHARE VIEW -->
+      <ng-container *ngIf="isPublicShare; else privateNav">
+        <span class="badge bg-info text-dark fs-6 px-3 py-2">
+          Shared album view
+        </span>
+      </ng-container>
+
+      <!-- PRIVATE AUTH VIEW -->
+      <ng-template #privateNav>
+
+        <!-- LOGGED IN -->
+        <ng-container *ngIf="isLoggedIn; else loggedOut">
+
+          <span class="text-light fs-6 d-none d-lg-inline">
+            Logged in
+          </span>
+
+          <button
+            type="button"
+            class="btn btn-warning btn-sm fs-6 px-3"
+            (click)="logout()"
+          >
+            Logout
+          </button>
+        </ng-container>
+
+        <!-- LOGGED OUT -->
+        <ng-template #loggedOut>
+          <button
+            type="button"
+            class="btn btn-outline-light btn-sm fs-6 px-3"
+            (click)="goTo('/login')"
+          >
+            Login
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-primary btn-sm fs-6 px-3"
+            (click)="goTo('/register')"
+          >
+            Register
+          </button>
+        </ng-template>
+
+      </ng-template>
+    </div>
+  </div>
+</header>

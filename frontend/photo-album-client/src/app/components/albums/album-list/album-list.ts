@@ -27,6 +27,32 @@ export class AlbumList implements OnInit {
     private authService: AuthService
   ) {}
 
+get username(): string {
+  const user = this.authService.getCurrentUser?.();
+
+  if (!user) {
+    return 'there';
+  }
+
+  // Try common property names safely
+  const name =
+    user.firstName ||
+    user.name ||
+    user.username ||
+    user.email ||
+    '';
+
+  if (!name) {
+    return 'there';
+  }
+
+  // Return first word only (first name)
+  return name.split(' ')[0];
+}
+
+
+
+
   ngOnInit(): void {
     this.loadAlbums();
   }
