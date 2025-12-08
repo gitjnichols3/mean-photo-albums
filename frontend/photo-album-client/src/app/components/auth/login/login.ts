@@ -1,7 +1,7 @@
 // src/app/components/auth/login/login.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 
 import { AuthService } from '../../../services/auth.service';
@@ -24,10 +24,14 @@ export class Login {
     private router: Router
   ) {}
 
-  onSubmit(): void {
+  onSubmit(form: NgForm): void {
+    // Clear any previous error
     this.errorMessage = '';
-    if (!this.email || !this.password) {
-      this.errorMessage = 'Email and password are required';
+
+    // Let the template-driven validation run the show
+    if (form.invalid) {
+      // Make sure all controls show their errors
+      form.form.markAllAsTouched();
       return;
     }
 

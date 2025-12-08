@@ -1,4 +1,4 @@
-<!-- albums-create.html (replace your current content with this) -->
+<!-- albums-create.html -->
 
 <div class="create-album-page">
   <!-- Page header / back link -->
@@ -12,8 +12,6 @@
     </button>
   </div>
 
-
-
   <!-- Centered card -->
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-7 col-xl-6">
@@ -25,7 +23,7 @@
             Give your album a clear title and optional description. You can add events and photos after creating it.
           </p>
 
-          <form (ngSubmit)="onSubmit()" #albumForm="ngForm" novalidate>
+          <form #albumForm="ngForm" (ngSubmit)="onSubmit(albumForm)" novalidate>
             <!-- Title -->
             <div class="mb-3">
               <label for="title" class="form-label">
@@ -38,9 +36,16 @@
                 class="form-control"
                 required
                 [(ngModel)]="title"
+                #titleRef="ngModel"
               />
+
+              <!-- Field-level validation -->
+              <div class="error mt-1" *ngIf="titleRef.invalid && (titleRef.dirty || titleRef.touched)">
+                <small>Title is required</small>
+              </div>
+
               <div class="form-text">
-                e.g., “Summer Road Trip 2025” or “Grandma’s 80th Birthday”
+                e.g., “Summer Road Trip 2025” or “Grandma's 80th Birthday”
               </div>
             </div>
 
@@ -58,7 +63,7 @@
               ></textarea>
             </div>
 
-            <!-- Error message -->
+            <!-- Server-side error message -->
             <div *ngIf="formError" class="alert alert-danger mt-3">
               {{ formError }}
             </div>
@@ -76,7 +81,7 @@
               <button
                 type="submit"
                 class="btn btn-primary"
-                [disabled]="isSubmitting"
+                [disabled]="isSubmitting || albumForm.invalid"
               >
                 {{ isSubmitting ? 'Saving...' : 'Create album' }}
               </button>

@@ -1,7 +1,8 @@
 <div class="register-container">
   <h2>Create account</h2>
 
-  <form (ngSubmit)="onSubmit()" novalidate>
+  <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)" novalidate>
+    <!-- Name -->
     <div class="form-group">
       <label for="name">Full name</label>
       <input
@@ -10,9 +11,16 @@
         [(ngModel)]="name"
         name="name"
         required
+        #nameRef="ngModel"
       />
+      <div class="error" *ngIf="nameRef.invalid && (nameRef.dirty || nameRef.touched)">
+        <small>
+          Full name is required
+        </small>
+      </div>
     </div>
 
+    <!-- Email -->
     <div class="form-group">
       <label for="email">Email</label>
       <input
@@ -21,9 +29,20 @@
         [(ngModel)]="email"
         name="email"
         required
+        email
+        #emailRef="ngModel"
       />
+      <div class="error" *ngIf="emailRef.invalid && (emailRef.dirty || emailRef.touched)">
+        <small *ngIf="emailRef.errors?.['required']">
+          Email is required
+        </small>
+        <small *ngIf="emailRef.errors?.['email']">
+          Please enter a valid email
+        </small>
+      </div>
     </div>
 
+    <!-- Password -->
     <div class="form-group">
       <label for="password">Password</label>
       <input
@@ -32,9 +51,20 @@
         [(ngModel)]="password"
         name="password"
         required
+        minlength="6"
+        #passwordRef="ngModel"
       />
+      <div class="error" *ngIf="passwordRef.invalid && (passwordRef.dirty || passwordRef.touched)">
+        <small *ngIf="passwordRef.errors?.['required']">
+          Password is required
+        </small>
+        <small *ngIf="passwordRef.errors?.['minlength']">
+          Password must be at least 6 characters
+        </small>
+      </div>
     </div>
 
+    <!-- Confirm password -->
     <div class="form-group">
       <label for="confirmPassword">Confirm password</label>
       <input
@@ -43,18 +73,36 @@
         [(ngModel)]="confirmPassword"
         name="confirmPassword"
         required
+        #confirmPasswordRef="ngModel"
       />
+      <div
+        class="error"
+        *ngIf="(confirmPasswordRef.dirty || confirmPasswordRef.touched) &&
+               (confirmPasswordRef.invalid || password !== confirmPassword)"
+      >
+        <small *ngIf="confirmPasswordRef.errors?.['required']">
+          Please confirm your password
+        </small>
+        <small *ngIf="!confirmPasswordRef.errors && password && confirmPassword && password !== confirmPassword">
+          Passwords do not match
+        </small>
+      </div>
     </div>
 
+    <!-- API error -->
     <div *ngIf="errorMessage" class="error">
       {{ errorMessage }}
     </div>
 
+    <!-- Success message (e.g., fallback path) -->
     <div *ngIf="successMessage" class="success">
       {{ successMessage }}
     </div>
 
-    <button type="submit" [disabled]="isLoading">
+    <button
+      type="submit"
+      [disabled]="isLoading || registerForm.invalid || password !== confirmPassword"
+    >
       {{ isLoading ? 'Creating account...' : 'Create account' }}
     </button>
   </form>

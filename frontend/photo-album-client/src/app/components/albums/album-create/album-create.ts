@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import { Album } from '../../../models/album.model';
@@ -23,22 +23,22 @@ export class AlbumCreateComponent {
     private router: Router
   ) {}
 
-  onSubmit(): void {
+  onSubmit(form: NgForm): void {
     this.formError = '';
+
+    // Use Angular's form validation
+    if (form.invalid) {
+      form.form.markAllAsTouched();
+      return;
+    }
 
     const title = this.title.trim();
     const description = this.description.trim();
 
-    if (!title) {
-      this.formError = 'Title is required';
-      return;
-    }
-
-const newAlbum: { title: string; description?: string } = {
-  title,
-  description: description || undefined
-};
-
+    const newAlbum: { title: string; description?: string } = {
+      title,
+      description: description || undefined
+    };
 
     this.isSubmitting = true;
 
@@ -46,7 +46,7 @@ const newAlbum: { title: string; description?: string } = {
       next: (created) => {
         this.isSubmitting = false;
 
-        // If the API returns the created album with _id, you can navigate to details:
+        // If the API returns the created album with _id, navigate to details
         if (created && (created as any)._id) {
           this.router.navigate(['/albums', (created as any)._id]);
         } else {
@@ -56,7 +56,7 @@ const newAlbum: { title: string; description?: string } = {
       },
       error: (err) => {
         console.error('Error creating album', err);
-        this.formError = 'Failed to create album';
+        this.formError = err?.error?.message || 'Failed to create album';
         this.isSubmitting = false;
       }
     });

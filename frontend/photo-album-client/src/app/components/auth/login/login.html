@@ -1,7 +1,8 @@
 <div class="login-container">
   <h2>Sign in</h2>
 
-  <form (ngSubmit)="onSubmit()" novalidate>
+  <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+    <!-- Email -->
     <div class="form-group">
       <label for="email">Email</label>
       <input
@@ -10,9 +11,22 @@
         [(ngModel)]="email"
         name="email"
         required
+        email
+        #emailRef="ngModel"
       />
+
+      <!-- Inline email validation -->
+      <div class="error" *ngIf="emailRef.invalid && (emailRef.dirty || emailRef.touched)">
+        <small *ngIf="emailRef.errors?.['required']">
+          Email is required
+        </small>
+        <small *ngIf="emailRef.errors?.['email']">
+          Please enter a valid email
+        </small>
+      </div>
     </div>
 
+    <!-- Password -->
     <div class="form-group">
       <label for="password">Password</label>
       <input
@@ -21,14 +35,30 @@
         [(ngModel)]="password"
         name="password"
         required
+        minlength="6"
+        #passwordRef="ngModel"
       />
+
+      <!-- Inline password validation -->
+      <div class="error" *ngIf="passwordRef.invalid && (passwordRef.dirty || passwordRef.touched)">
+        <small *ngIf="passwordRef.errors?.['required']">
+          Password is required
+        </small>
+        <small *ngIf="passwordRef.errors?.['minlength']">
+          Password must be at least 6 characters
+        </small>
+      </div>
     </div>
 
+    <!-- API error (invalid credentials, etc.) -->
     <div *ngIf="errorMessage" class="error">
       {{ errorMessage }}
     </div>
 
-    <button type="submit" [disabled]="isLoading">
+    <button
+      type="submit"
+      [disabled]="isLoading || loginForm.invalid"
+    >
       {{ isLoading ? 'Signing in...' : 'Sign in' }}
     </button>
   </form>
