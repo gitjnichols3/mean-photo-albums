@@ -1,3 +1,29 @@
+/* Page container: center content with generous outer margins */
+.albums-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Header layout */
+.albums-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.albums-header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.albums-header-actions button {
+  padding: 0.4rem 0.8rem;
+}
+
+/* Optional actions row above/below header */
 .album-actions {
   margin: 0 0 1rem;
 }
@@ -6,19 +32,7 @@
   padding: 0.4rem 0.8rem;
 }
 
-.albums-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.albums-header-actions button {
-  margin-left: 0.5rem;
-  padding: 0.4rem 0.8rem;
-}
-
-
+/* Create album form (if used on this page or a sibling) */
 .create-album-form {
   border: 1px solid #ddd;
   padding: 0.75rem;
@@ -43,7 +57,51 @@
   font: inherit;
 }
 
+/* Error message */
 .error {
   color: #b00020;
   margin-top: 0.25rem;
+}
+
+/* Album list layout */
+.album-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.album-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Album titles: look/behave like links */
+.album-title-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  flex: 1 1 auto;
+  cursor: pointer;
+  font: inherit;
+  color: #0b63ce; /* link-ish blue */
+  text-decoration: underline;
+}
+
+.album-title-btn:hover {
+  text-decoration: none;
+}
+
+/* Delete button */
+.album-delete-btn {
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background-color: #f8f8f8;
 }

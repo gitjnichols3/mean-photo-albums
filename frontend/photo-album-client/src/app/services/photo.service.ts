@@ -64,11 +64,24 @@ export class PhotoService {
       .pipe(map((res) => res.photos));
   }
 
-  // ✅ NEW: delete photo by id
+
   deletePhoto(photoId: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${this.baseUrl}/${photoId}`,
       { headers: this.getAuthHeaders() }
     );
   }
+
+// Example: adjust to match your existing service
+reassignPhoto(photoId: string, eventId: string | null) {
+  const body = { eventId };
+
+  return this.http.patch<any>(
+    `${environment.apiBaseUrl}/photos/${photoId}/event`,
+    body,
+    { headers: this.getAuthHeaders() }
+  );
+}
+
+
 }

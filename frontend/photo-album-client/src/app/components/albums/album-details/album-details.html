@@ -126,27 +126,48 @@
               (click)="openPhotoViewer(i)"
             />
 
-            <div class="photo-meta-row">
-              <button
-                type="button"
-                class="btn-link btn-delete"
-                (click)="deletePhoto(p)"
-              >
-                Delete
-              </button>
+          <div class="photo-meta-row">
+  <div class="photo-meta-main">
+    <button
+      type="button"
+      class="btn-link btn-delete"
+      (click)="deletePhoto(p)"
+    >
+      Delete
+    </button>
 
-              <figcaption
-                *ngIf="p.takenAt || p.uploadedAt"
-                class="photo-caption"
-              >
-                <ng-container *ngIf="p.takenAt; else uploadedDate">
-                  {{ p.takenAt | date: 'short' }}
-                </ng-container>
-                <ng-template #uploadedDate>
-                  Uploaded at: {{ p.uploadedAt | date: 'short' }}
-                </ng-template>
-              </figcaption>
-            </div>
+    <select
+      class="photo-event-select"
+      [ngModel]="p.eventId || ''"
+      (ngModelChange)="onChangePhotoEvent(p, $event)"
+    >
+      <option value="">
+        Unassigned
+      </option>
+
+      <option
+        *ngFor="let ev of album.events"
+        [value]="ev.eventId"
+      >
+        {{ ev.name || 'Untitled event' }}
+      </option>
+    </select>
+  </div>
+
+  <figcaption
+    *ngIf="p.takenAt || p.uploadedAt"
+    class="photo-caption"
+  >
+    <ng-container *ngIf="p.takenAt; else uploadedDate">
+      {{ p.takenAt | date: 'short' }}
+    </ng-container>
+    <ng-template #uploadedDate>
+      Uploaded at: {{ p.uploadedAt | date: 'short' }}
+    </ng-template>
+  </figcaption>
+</div>
+
+
           </figure>
         </div>
       </div>
@@ -250,29 +271,60 @@
       {{ shareError }}
     </p>
 
-    <div class="share-controls">
-      <button
-        type="button"
-        class="btn-primary"
-        (click)="generateShareLink()"
-        [disabled]="isLoadingShare"
-      >
-        {{ isLoadingShare ? 'Creating link…' : 'Create share link' }}
-      </button>
-    </div>
+    <!-- If we already have a share URL, show it as a clickable link + copy button -->
+    <ng-container *ngIf="shareUrl; else createShare">
+      <div class="share-link-box">
+        <label class="form-label">
+          Public share link
+        </label>
 
-    <div *ngIf="shareUrl" class="share-link-box">
-      <p class="hint">
-        Share this link with others:
-      </p>
-      <input
-        type="text"
-        [value]="shareUrl"
-        readonly
-        class="share-link-input"
-        (click)="$event.target.select()"
-      />
-    </div>
+        <div class="share-row">
+          <!-- Clickable link, full URL visible -->
+          <a
+            [href]="shareUrl"
+            target="_blank"
+            rel="noopener"
+            class="share-link-text"
+          >
+            {{ shareUrl }}
+          </a>
+
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="copyShareUrl()"
+          >
+            {{
+              copyStatus === 'copied'
+                ? 'Copied!'
+                : (copyStatus === 'error' ? 'Copy error' : 'Copy link')
+            }}
+          </button>
+        </div>
+
+        <p class="hint">
+          Anyone with this link can view the album in read-only mode.
+        </p>
+
+        <p *ngIf="copyStatus === 'error'" class="error small">
+          Could not copy automatically. You can still select and copy the link above.
+        </p>
+      </div>
+    </ng-container>
+
+    <!-- If no share URL yet, show the create button -->
+    <ng-template #createShare>
+      <div class="share-controls">
+        <button
+          type="button"
+          class="btn-primary"
+          (click)="generateShareLink()"
+          [disabled]="isLoadingShare"
+        >
+          {{ isLoadingShare ? 'Creating link…' : 'Create share link' }}
+        </button>
+      </div>
+    </ng-template>
   </section>
 </div>
 

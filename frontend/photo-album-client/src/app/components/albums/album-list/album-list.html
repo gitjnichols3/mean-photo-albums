@@ -1,34 +1,51 @@
-<div class="albums-header">
-  <h2>Your Albums</h2>
+<div class="albums-page">
+  <div class="albums-header">
+    <h2>Your Albums</h2>
 
-  <div class="albums-header-actions">
-    <button type="button" [routerLink]="['/albums/create']">
-      + Create New Album
-    </button>
+    <div class="albums-header-actions">
+      <button type="button" [routerLink]="['/albums/create']">
+        + Create New Album
+      </button>
 
-    <button type="button" (click)="logout()">
-      Logout
-    </button>
+      <button type="button" (click)="logout()">
+        Logout
+      </button>
+    </div>
   </div>
-</div>
 
-
-<p *ngIf="errorMessage" class="error">
-  {{ errorMessage }}
-</p>
-
-<ng-container *ngIf="albums$ | async as albums; else loading">
-  <p *ngIf="albums.length === 0 && !errorMessage">
-    You don't have any albums yet.
+  <p *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
   </p>
 
-  <ul *ngIf="albums.length > 0">
-    <li *ngFor="let album of albums" (click)="goToAlbum(album._id)">
-      {{ album.title }}
-    </li>
-  </ul>
-</ng-container>
+  <ng-container *ngIf="albums$ | async as albums; else loading">
+    <p *ngIf="albums.length === 0 && !errorMessage">
+      You don't have any albums yet.
+    </p>
 
-<ng-template #loading>
-  <p>Loading albums...</p>
-</ng-template>
+    <ul *ngIf="albums.length > 0" class="album-list">
+      <li *ngFor="let album of albums" class="album-list-item">
+        <!-- Clickable title to go to album -->
+        <button
+          type="button"
+          class="album-title-btn"
+          (click)="goToAlbum(album._id)"
+        >
+          {{ album.title }}
+        </button>
+
+        <!-- Delete button -->
+        <button
+          type="button"
+          class="album-delete-btn"
+          (click)="deleteAlbum(album); $event.stopPropagation()"
+        >
+          Delete
+        </button>
+      </li>
+    </ul>
+  </ng-container>
+
+  <ng-template #loading>
+    <p>Loading albums...</p>
+  </ng-template>
+</div>

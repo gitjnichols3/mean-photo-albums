@@ -243,9 +243,7 @@ label {
 .photo-meta-row {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  margin-top: 0.25rem;
-  padding-left: 0;        /* prevents sneaky left offset */
+  gap: 0.25rem;
 }
 
 
@@ -272,6 +270,53 @@ label {
   padding-left: 0;
   margin-left: 0;
 }
+
+.share-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.share-link-text {
+  flex: 1 1 auto;
+  word-break: break-all;
+  text-decoration: underline;
+}
+
+.share-link-box .small {
+  font-size: 0.85rem;
+}
+
+
+.photo-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.photo-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.photo-meta-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+/* Make the dropdown fit inside the card width */
+.photo-event-select {
+  width: 100%;
+  max-width: 100%;
+  font: inherit;
+  padding: 0.25rem 0.5rem;
+}
+
 
 
 @keyframes viewer-backdrop-fade {

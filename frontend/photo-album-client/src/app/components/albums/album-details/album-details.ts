@@ -30,6 +30,7 @@ export class AlbumDetailsComponent implements OnInit {
   shareUrl: string | null = null;
   shareError = '';
   isLoadingShare = false;
+  copyStatus: 'idle' | 'copied' | 'error' = 'idle';
 
   // Add event
   newEventName = '';
@@ -37,7 +38,7 @@ export class AlbumDetailsComponent implements OnInit {
   newEventLocation = '';
   formError = '';
 
-    // Editing state
+  // Editing state
   editingEventId: string | null = null;
 
   // Photos
@@ -90,6 +91,13 @@ export class AlbumDetailsComponent implements OnInit {
       next: (album) => {
         this.album = album;
         this.isLoading = false;
+
+        // If the album already has a shareSlug, compute the share URL immediately
+        if ((album as any).shareSlug) {
+          this.shareSlug = (album as any).shareSlug;
+          this.shareUrl = `${window.location.origin}/share/${this.shareSlug}`;
+        }
+
         this.cdr.detectChanges();
 
         // Once album is loaded, load its photos
@@ -141,14 +149,12 @@ export class AlbumDetailsComponent implements OnInit {
     return new Date(yyyy, mm - 1, dd);
   }
 
-
-
   get sortedEvents(): any[] {
     if (!this.album?.events) return [];
 
     const eventsCopy = [...this.album.events];
 
-        eventsCopy.sort((a: any, b: any) => {
+    eventsCopy.sort((a: any, b: any) => {
       const aDate = this.toLocalEventDate(a.startDate);
       const bDate = this.toLocalEventDate(b.startDate);
 
@@ -167,8 +173,6 @@ export class AlbumDetailsComponent implements OnInit {
       return 0;
     });
 
-
-
     return eventsCopy;
   }
 
@@ -176,7 +180,7 @@ export class AlbumDetailsComponent implements OnInit {
     const groups: { dateLabel: string; events: any[] }[] = [];
     const map = new Map<string, any[]>();
 
-        for (const ev of this.sortedEvents) {
+    for (const ev of this.sortedEvents) {
       let label = 'No date';
 
       if (ev.startDate) {
@@ -190,13 +194,11 @@ export class AlbumDetailsComponent implements OnInit {
         }
       }
 
-
       if (!map.has(label)) {
         map.set(label, []);
       }
       map.get(label)!.push(ev);
     }
-
 
     for (const [dateLabel, events] of map.entries()) {
       groups.push({ dateLabel, events });
@@ -232,31 +234,29 @@ export class AlbumDetailsComponent implements OnInit {
   // PHOTO VIEWER MODAL (LIGHTBOX)
   // ------------------------
 
-openPhotoViewer(startIndex: number): void {
-  const baseList = this.selectedEventId
-    ? this.selectedEventPhotos
-    : this.unassignedPhotos;
+  openPhotoViewer(startIndex: number): void {
+    const baseList = this.selectedEventId
+      ? this.selectedEventPhotos
+      : this.unassignedPhotos;
 
-  if (!baseList || baseList.length === 0) {
-    return;
+    if (!baseList || baseList.length === 0) {
+      return;
+    }
+
+    this.viewerPhotos = baseList;
+    this.viewerIndex = startIndex;
+    this.isPhotoViewerOpen = true;
+
+    // Lock background scroll while viewer is open
+    document.body.style.overflow = 'hidden';
   }
 
-  this.viewerPhotos = baseList;
-  this.viewerIndex = startIndex;
-  this.isPhotoViewerOpen = true;
+  closePhotoViewer(): void {
+    this.isPhotoViewerOpen = false;
 
-  // Lock background scroll while viewer is open
-  document.body.style.overflow = 'hidden';
-}
-
-
-closePhotoViewer(): void {
-  this.isPhotoViewerOpen = false;
-
-  // Restore background scroll
-  document.body.style.overflow = '';
-}
-
+    // Restore background scroll
+    document.body.style.overflow = '';
+  }
 
   get currentViewerPhoto(): Photo | null {
     if (!this.viewerPhotos.length) return null;
@@ -305,46 +305,69 @@ closePhotoViewer(): void {
   // PHOTOS
   // ------------------------
 
-private loadPhotos(): void {
-  if (!this.album?._id) return;
+  private loadPhotos(): void {
+    if (!this.album?._id) return;
 
-  this.isLoadingPhotos = true;
-  this.photoError = '';
+    this.isLoadingPhotos = true;
+    this.photoError = '';
 
-  this.photoService.getPhotosForAlbum(this.album._id).subscribe({
-    next: (photos) => {
-      // Sort photos by "effective date": takenAt (EXIF) first, then uploadedAt
-      this.photos = [...photos].sort((a, b) => {
-        const aDate = a.takenAt
-          ? new Date(a.takenAt as any)
-          : a.uploadedAt
-          ? new Date(a.uploadedAt as any)
-          : null;
+    this.photoService.getPhotosForAlbum(this.album._id).subscribe({
+      next: (photos) => {
+        // Sort photos by "effective date": takenAt (EXIF) first, then uploadedAt
+        this.photos = [...photos].sort((a, b) => {
+          const aDate = a.takenAt
+            ? new Date(a.takenAt as any)
+            : a.uploadedAt
+            ? new Date(a.uploadedAt as any)
+            : null;
 
-        const bDate = b.takenAt
-          ? new Date(b.takenAt as any)
-          : b.uploadedAt
-          ? new Date(b.uploadedAt as any)
-          : null;
+          const bDate = b.takenAt
+            ? new Date(b.takenAt as any)
+            : b.uploadedAt
+            ? new Date(b.uploadedAt as any)
+            : null;
 
-        if (!aDate && !bDate) return 0;
-        if (!aDate) return 1;
-        if (!bDate) return -1;
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return 1;
+          if (!bDate) return -1;
 
-        return aDate.getTime() - bDate.getTime();
-      });
+          return aDate.getTime() - bDate.getTime();
+        });
 
-      this.isLoadingPhotos = false;
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      console.error('[AlbumDetails] Error loading photos', err);
-      this.photoError = 'Failed to load photos';
-      this.isLoadingPhotos = false;
-      this.cdr.detectChanges();
-    },
-  });
-}
+        this.isLoadingPhotos = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[AlbumDetails] Error loading photos', err);
+        this.photoError = 'Failed to load photos';
+        this.isLoadingPhotos = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+      onChangePhotoEvent(photo: Photo, newEventId: string): void {
+    // Empty string from the dropdown means "unassigned"
+    const targetEventId: string | null = newEventId || null;
+
+    if (!photo._id) {
+      return;
+    }
+
+    this.photoError = '';
+
+    this.photoService.reassignPhoto(photo._id, targetEventId).subscribe({
+      next: () => {
+        // Reload photos so the photo moves to the correct group
+        this.loadPhotos();
+      },
+      error: (err) => {
+        console.error('[AlbumDetails] Error reassigning photo', err);
+        this.photoError = 'Failed to reassign photo';
+        this.cdr.detectChanges();
+      },
+    });
+  }
 
 
 
@@ -422,81 +445,80 @@ private loadPhotos(): void {
   // ------------------------
 
   addEvent(): void {
-  this.formError = '';
+    this.formError = '';
 
-  if (!this.albumId) {
-    this.formError = 'Album id is missing';
-    return;
+    if (!this.albumId) {
+      this.formError = 'Album id is missing';
+      return;
+    }
+
+    const name = this.newEventName.trim();
+    const date = this.newEventDate?.trim();
+    const location = this.newEventLocation?.trim();
+
+    if (!name) {
+      this.formError = 'Event name is required';
+      return;
+    }
+
+    const payload: any = { name };
+    if (date) payload.startDate = date;
+    if (location) payload.location = location;
+
+    // If we are editing, call update instead of add
+    if (this.editingEventId) {
+      this.albumService
+        .updateEventInAlbum(this.albumId, this.editingEventId, payload)
+        .subscribe({
+          next: (updatedAlbum) => {
+            this.album = updatedAlbum;
+            this.resetEventForm();
+            this.cdr.detectChanges();
+          },
+          error: (err: any) => {
+            console.error('[AlbumDetails] Error updating event', err);
+            this.formError = 'Failed to update event';
+            this.cdr.detectChanges();
+          },
+        });
+      return;
+    }
+
+    // Otherwise, normal add
+    this.albumService.addEventToAlbum(this.albumId, payload).subscribe({
+      next: (updatedAlbum) => {
+        this.album = updatedAlbum;
+        this.resetEventForm();
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('[AlbumDetails] Error adding event', err);
+        this.formError = 'Failed to add event';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  const name = this.newEventName.trim();
-  const date = this.newEventDate?.trim();
-  const location = this.newEventLocation?.trim();
-
-  if (!name) {
-    this.formError = 'Event name is required';
-    return;
+  startEditEvent(ev: any): void {
+    this.editingEventId = ev.eventId;
+    this.newEventName = ev.name || '';
+    this.newEventDate = ev.startDate ? ev.startDate.substring(0, 10) : '';
+    this.newEventLocation = ev.location || '';
   }
 
-  const payload: any = { name };
-  if (date) payload.startDate = date;
-  if (location) payload.location = location;
-
-  // If we are editing, call update instead of add
-  if (this.editingEventId) {
-    this.albumService
-      .updateEventInAlbum(this.albumId, this.editingEventId, payload)
-      .subscribe({
-        next: (updatedAlbum) => {
-          this.album = updatedAlbum;
-          this.resetEventForm();
-          this.cdr.detectChanges();
-        },
-        error: (err: any) => {
-          console.error('[AlbumDetails] Error updating event', err);
-          this.formError = 'Failed to update event';
-          this.cdr.detectChanges();
-        },
-      });
-    return;
+  cancelEditEvent(): void {
+    this.resetEventForm();
   }
 
-  // Otherwise, normal add
-  this.albumService.addEventToAlbum(this.albumId, payload).subscribe({
-    next: (updatedAlbum) => {
-      this.album = updatedAlbum;
-      this.resetEventForm();
-      this.cdr.detectChanges();
-    },
-    error: (err: any) => {
-      console.error('[AlbumDetails] Error adding event', err);
-      this.formError = 'Failed to add event';
-      this.cdr.detectChanges();
-    },
-  });
-}
+  private resetEventForm(): void {
+    this.editingEventId = null;
+    this.newEventName = '';
+    this.newEventDate = '';
+    this.newEventLocation = '';
+    this.formError = '';
+  }
 
-startEditEvent(ev: any): void {
-  this.editingEventId = ev.eventId;
-  this.newEventName = ev.name || '';
-  this.newEventDate = ev.startDate ? ev.startDate.substring(0, 10) : '';
-  this.newEventLocation = ev.location || '';
-}
-
-cancelEditEvent(): void {
-  this.resetEventForm();
-}
-
-private resetEventForm(): void {
-  this.editingEventId = null;
-  this.newEventName = '';
-  this.newEventDate = '';
-  this.newEventLocation = '';
-  this.formError = '';
-}
-
-
-    editEvent(ev: any): void {
+  editEvent(ev: any): void {
     if (!this.albumId || !ev.eventId) {
       return;
     }
@@ -572,8 +594,6 @@ private resetEventForm(): void {
       });
   }
 
-
-
   deleteEvent(ev: any): void {
     if (!this.albumId || !ev.eventId) return;
 
@@ -612,11 +632,18 @@ private resetEventForm(): void {
 
     this.isLoadingShare = true;
     this.shareError = '';
+    this.copyStatus = 'idle';
 
     this.albumService.getShareLink(this.album._id).subscribe({
       next: ({ shareSlug }) => {
         this.shareSlug = shareSlug;
-        this.shareUrl = `http://localhost:4200/share/${shareSlug}`;
+        this.shareUrl = `${window.location.origin}/share/${shareSlug}`;
+
+        // Keep album object in sync if it has a shareSlug field
+        if (this.album) {
+          (this.album as any).shareSlug = shareSlug;
+        }
+
         this.isLoadingShare = false;
         this.cdr.detectChanges();
       },
@@ -628,4 +655,50 @@ private resetEventForm(): void {
       },
     });
   }
+
+ async copyShareUrl(): Promise<void> {
+  if (!this.shareUrl) return;
+
+  try {
+    // Prefer modern clipboard API if available
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(this.shareUrl);
+      this.copyStatus = 'copied';
+      this.cdr.detectChanges();
+    } else {
+      // Fallback: use a temporary textarea + execCommand
+      const textarea = document.createElement('textarea');
+      textarea.value = this.shareUrl;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+
+      const successful = document.execCommand
+        ? document.execCommand('copy')
+        : false;
+
+      document.body.removeChild(textarea);
+
+      this.copyStatus = successful ? 'copied' : 'error';
+      this.cdr.detectChanges();
+    }
+
+    // Reset status after a short delay
+    setTimeout(() => {
+      this.copyStatus = 'idle';
+      this.cdr.detectChanges();
+    }, 2000);
+  } catch (err) {
+    console.error('[AlbumDetails] Clipboard error', err);
+    this.copyStatus = 'error';
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      this.copyStatus = 'idle';
+      this.cdr.detectChanges();
+    }, 2000);
+  }
+}
 }
