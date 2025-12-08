@@ -1,6 +1,11 @@
 // src/app/components/public/share-album/share-album.component.ts
 
-import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef,
+  HostListener,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -94,6 +99,31 @@ export class ShareAlbumComponent implements OnInit {
       });
   }
 
+  /**
+   * Parse an event date string into a local calendar Date.
+   * Works for both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ".
+   */
+  private toLocalEventDate(value?: string | null): Date | null {
+    if (!value) return null;
+
+    const raw = value.toString();
+    const datePart = raw.split('T')[0]; // strip any time/zone
+    const parts = datePart.split('-');
+    if (parts.length !== 3) return null;
+
+    const [yyyyStr, mmStr, ddStr] = parts;
+    const yyyy = Number(yyyyStr);
+    const mm = Number(mmStr);
+    const dd = Number(ddStr);
+
+    if (Number.isNaN(yyyy) || Number.isNaN(mm) || Number.isNaN(dd)) {
+      return null;
+    }
+
+    // Local date with correct calendar day
+    return new Date(yyyy, mm - 1, dd);
+  }
+
   // --- Timeline helpers ---
 
   get sortedEvents(): PublicEvent[] {
@@ -101,16 +131,22 @@ export class ShareAlbumComponent implements OnInit {
 
     const eventsCopy = [...this.album.events];
 
-    eventsCopy.sort((a: any, b: any) => {
-      const aTime = a.startDate ? new Date(a.startDate).getTime() : NaN;
-      const bTime = b.startDate ? new Date(b.startDate).getTime() : NaN;
+    eventsCopy.sort((a: PublicEvent, b: PublicEvent) => {
+      const aDate = this.toLocalEventDate(a.startDate ?? null);
+      const bDate = this.toLocalEventDate(b.startDate ?? null);
+
+      const aTime = aDate ? aDate.getTime() : NaN;
+      const bTime = bDate ? bDate.getTime() : NaN;
 
       const aHasDate = !Number.isNaN(aTime);
       const bHasDate = !Number.isNaN(bTime);
 
-      if (aHasDate && bHasDate) return aTime - bTime;
-      if (aHasDate && !bHasDate) return -1;
-      if (!aHasDate && bHasDate) return 1;
+      if (aHasDate && bHasDate) {
+        return aTime - bTime; // oldest first
+      }
+      if (aHasDate && !bHasDate) return -1; // dated before undated
+      if (!aHasDate && bHasDate) return 1; // undated after dated
+
       return 0;
     });
 
@@ -170,13 +206,19 @@ export class ShareAlbumComponent implements OnInit {
     this.viewerIndex = 0;
   }
 
+  /**
+   * Photos for the currently-selected event, sorted chronologically.
+   */
   get selectedEventPhotos(): Photo[] {
     if (!this.selectedEventId) return [];
-    return this.photos.filter((p) => p.eventId === this.selectedEventId);
+    return this.getPhotosForEvent(this.selectedEventId);
   }
 
+  /**
+   * Unassigned photos, sorted chronologically.
+   */
   get unassignedPhotos(): Photo[] {
-    return this.photos.filter((p) => !p.eventId);
+    return this.getUnassignedPhotos();
   }
 
   // ------------------------
@@ -247,5 +289,46 @@ export class ShareAlbumComponent implements OnInit {
       default:
         break;
     }
+  }
+
+  // --- Photo time + sorted lists for events/unassigned ---
+
+  private getPhotoTime(p: any): number {
+    // Prefer takenAt (from EXIF) if present, otherwise fall back
+    const source = p?.takenAt || p?.createdAt || p?.uploadedAt || null;
+
+    if (!source) return 0;
+
+    const d = new Date(source);
+    const t = d.getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+
+  getPhotosForEvent(eventId: string): Photo[] {
+    if (!this.photos || !Array.isArray(this.photos)) {
+      return [];
+    }
+
+    const list = this.photos.filter((p: any) => p.eventId === eventId);
+
+    return list.slice().sort((a, b) => {
+      const aTime = this.getPhotoTime(a);
+      const bTime = this.getPhotoTime(b);
+      return aTime - bTime; // oldest first
+    });
+  }
+
+  getUnassignedPhotos(): Photo[] {
+    if (!this.photos || !Array.isArray(this.photos)) {
+      return [];
+    }
+
+    const list = this.photos.filter((p: any) => !p.eventId);
+
+    return list.slice().sort((a, b) => {
+      const aTime = this.getPhotoTime(a);
+      const bTime = this.getPhotoTime(b);
+      return aTime - bTime; // oldest first
+    });
   }
 }

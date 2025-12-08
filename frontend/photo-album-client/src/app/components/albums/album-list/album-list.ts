@@ -6,6 +6,7 @@ import { catchError } from 'rxjs/operators';
 
 import { AlbumService } from '../../../services/album.service';
 import { Album } from '../../../models/album.model';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-album-list',
@@ -18,10 +19,12 @@ export class AlbumList implements OnInit {
   albums$!: Observable<Album[]>;
   errorMessage = '';
 
-  constructor(
-    private albumService: AlbumService,
-    private router: Router
-  ) {}
+constructor(
+  private albumService: AlbumService,
+  private router: Router,
+  private authService: AuthService
+) {}
+
 
   ngOnInit(): void {
     this.loadAlbums();
@@ -44,4 +47,10 @@ export class AlbumList implements OnInit {
   goToAlbum(albumId: string): void {
     this.router.navigate(['/albums', albumId]);
   }
+
+
+  logout(): void {
+    this.authService.logout();
+  }
 }
+

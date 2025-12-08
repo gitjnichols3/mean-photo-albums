@@ -112,15 +112,48 @@ export class AlbumDetailsComponent implements OnInit {
   // ------------------------
   // TIMELINE: sorted + grouped
   // ------------------------
+  /**
+   * Parse an event date string into a local calendar Date.
+   * Works for both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ".
+   */
+  private toLocalEventDate(value?: string | null): Date | null {
+    if (!value) return null;
+
+    const raw = value.toString();
+    const datePart = raw.split('T')[0]; // strip any time/zone
+    const parts = datePart.split('-');
+    if (parts.length !== 3) return null;
+
+    const [yyyyStr, mmStr, ddStr] = parts;
+    const yyyy = Number(yyyyStr);
+    const mm = Number(mmStr);
+    const dd = Number(ddStr);
+
+    if (
+      Number.isNaN(yyyy) ||
+      Number.isNaN(mm) ||
+      Number.isNaN(dd)
+    ) {
+      return null;
+    }
+
+    // This creates a local date with the exact calendar day
+    return new Date(yyyy, mm - 1, dd);
+  }
+
+
 
   get sortedEvents(): any[] {
     if (!this.album?.events) return [];
 
     const eventsCopy = [...this.album.events];
 
-    eventsCopy.sort((a: any, b: any) => {
-      const aTime = a.startDate ? new Date(a.startDate).getTime() : NaN;
-      const bTime = b.startDate ? new Date(b.startDate).getTime() : NaN;
+        eventsCopy.sort((a: any, b: any) => {
+      const aDate = this.toLocalEventDate(a.startDate);
+      const bDate = this.toLocalEventDate(b.startDate);
+
+      const aTime = aDate ? aDate.getTime() : NaN;
+      const bTime = bDate ? bDate.getTime() : NaN;
 
       const aHasDate = !Number.isNaN(aTime);
       const bHasDate = !Number.isNaN(bTime);
@@ -128,11 +161,13 @@ export class AlbumDetailsComponent implements OnInit {
       if (aHasDate && bHasDate) {
         return aTime - bTime; // oldest first
       }
-      if (aHasDate && !bHasDate) return -1; // dated before undated
-      if (!aHasDate && bHasDate) return 1;  // undated after dated
+      if (aHasDate && !bHasDate) return -1;
+      if (!aHasDate && bHasDate) return 1;
 
       return 0;
     });
+
+
 
     return eventsCopy;
   }
@@ -141,12 +176,12 @@ export class AlbumDetailsComponent implements OnInit {
     const groups: { dateLabel: string; events: any[] }[] = [];
     const map = new Map<string, any[]>();
 
-    for (const ev of this.sortedEvents) {
+        for (const ev of this.sortedEvents) {
       let label = 'No date';
 
       if (ev.startDate) {
-        const d = new Date(ev.startDate);
-        if (!Number.isNaN(d.getTime())) {
+        const d = this.toLocalEventDate(ev.startDate);
+        if (d) {
           label = d.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -155,11 +190,13 @@ export class AlbumDetailsComponent implements OnInit {
         }
       }
 
+
       if (!map.has(label)) {
         map.set(label, []);
       }
       map.get(label)!.push(ev);
     }
+
 
     for (const [dateLabel, events] of map.entries()) {
       groups.push({ dateLabel, events });
@@ -459,7 +496,7 @@ private resetEventForm(): void {
 }
 
 
-  editEvent(ev: any): void {
+    editEvent(ev: any): void {
     if (!this.albumId || !ev.eventId) {
       return;
     }
@@ -467,17 +504,18 @@ private resetEventForm(): void {
     // name, date, location currently stored on this event
     const currentName = ev.name || '';
 
-    // try to normalize startDate into YYYY-MM-DD for the prompt
+    // Normalize startDate into YYYY-MM-DD for the prompt WITHOUT using new Date()
     let currentDate = '';
     if (ev.startDate) {
-      try {
-        const d = new Date(ev.startDate);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        currentDate = `${yyyy}-${mm}-${dd}`;
-      } catch {
-        currentDate = ev.startDate;
+      const raw = ev.startDate.toString();
+      // Handles both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ"
+      const datePart = raw.split('T')[0];
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+        const [yyyy, mm, dd] = parts;
+        if (yyyy && mm && dd) {
+          currentDate = `${yyyy}-${mm}-${dd}`;
+        }
       }
     }
 
@@ -499,10 +537,7 @@ private resetEventForm(): void {
     }
 
     // 3) Location
-    const location = window.prompt(
-      'Edit event location',
-      currentLocation
-    );
+    const location = window.prompt('Edit event location', currentLocation);
     if (location === null) {
       return; // cancelled
     }
@@ -523,7 +558,6 @@ private resetEventForm(): void {
         next: (updatedAlbum) => {
           this.album = updatedAlbum;
 
-          // keep selected event name in sync if we are viewing it
           if (this.selectedEventId === ev.eventId) {
             this.selectedEventName = trimmedName;
           }

@@ -260,6 +260,7 @@ const deleteEventFromAlbum = async (req, res) => {
     const albumId = req.params.id;
     const eventId = req.params.eventId;
 
+    // Find the album owned by the current user
     const album = await Album.findOne({
       _id: albumId,
       ownerId: req.user.id,
@@ -271,23 +272,37 @@ const deleteEventFromAlbum = async (req, res) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
-    const event = album.events.id(eventId);
-    if (!event) {
+    // IMPORTANT: events do not have Mongo _id; they use our custom eventId
+    const idx = album.events.findIndex((ev) => ev.eventId === eventId);
+
+    if (idx === -1) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    event.remove();
+    // Remove the event from the array
+    const [removedEvent] = album.events.splice(idx, 1);
+
+    // Unassign any photos associated with this event
+    await Photo.updateMany(
+      { albumId: album._id, eventId },
+      { $unset: { eventId: '' } }
+    );
+
     await album.save();
 
-    res.json({
+    return res.json({
       message: 'Event deleted successfully',
       album,
+      removedEvent,
     });
   } catch (err) {
     console.error('Error in deleteEventFromAlbum:', err.message);
-    res.status(500).json({ message: 'Server error while deleting event' });
+    return res
+      .status(500)
+      .json({ message: 'Server error while deleting event' });
   }
 };
+
 
 /**
  * Generate or return an existing share link for an album

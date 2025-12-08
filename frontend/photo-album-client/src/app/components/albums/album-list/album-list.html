@@ -1,8 +1,17 @@
-<h2>Your Albums</h2>
+<div class="albums-header">
+  <h2>Your Albums</h2>
 
-<button type="button" [routerLink]="['/albums/create']">
-  + Create New Album
-</button>
+  <div class="albums-header-actions">
+    <button type="button" [routerLink]="['/albums/create']">
+      + Create New Album
+    </button>
+
+    <button type="button" (click)="logout()">
+      Logout
+    </button>
+  </div>
+</div>
+
 
 <p *ngIf="errorMessage" class="error">
   {{ errorMessage }}

@@ -8,6 +8,12 @@ export const routes: Routes = [
       import('./components/auth/login/login').then(m => m.Login)
   },
 
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./components/auth/register/register').then(m => m.RegisterComponent)
+  },
+
     {
     path: 'share/:slug',
     loadComponent: () =>
@@ -33,7 +39,7 @@ export const routes: Routes = [
       import('./components/albums/album-details/album-details')
         .then(m => m.AlbumDetailsComponent)
   },
-  { path: '', redirectTo: 'albums', pathMatch: 'full' },
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' },
 
 ];
