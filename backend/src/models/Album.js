@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const eventSchema = new mongoose.Schema(
   {
     eventId: {
-      type: String,  // string is fine for event identifiers
+      type: String,  
       required: true,
     },
     name: {
@@ -13,7 +13,7 @@ const eventSchema = new mongoose.Schema(
     },
     startDate: {
       type: Date,
-      required: false, // can be added later when photos are uploaded
+      required: false, 
     },
     endDate: {
       type: Date,

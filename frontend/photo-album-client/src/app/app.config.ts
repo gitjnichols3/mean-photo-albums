@@ -9,6 +9,6 @@ import { routes } from './app.routes';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient()    // <-- REQUIRED for HttpClient in standalone apps
+    provideHttpClient()    // HttpClient
   ]
 };

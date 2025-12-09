@@ -22,11 +22,11 @@ const photoSchema = new mongoose.Schema(
     },
     thumbnailUrl: {
       type: String,
-      required: false, // you can add this later when you implement Sharp
+      required: false, 
     },
     takenAt: {
       type: Date,
-      required: false, // will come from EXIF later; can fallback to uploadedAt
+      required: false, 
     },
     uploadedAt: {
       type: Date,

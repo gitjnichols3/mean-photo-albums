@@ -4,12 +4,12 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 
-dotenv.config(); // 1️⃣ load .env first
+dotenv.config(); // load .env first
 
 //Logged mongo connection string for development
 //console.log('MONGO_URI from env:', JSON.stringify(process.env.MONGO_URI));
 
-const connectDB = require('./config/db');        // 2️⃣ require AFTER dotenv.config
+const connectDB = require('./config/db');        // require AFTER dotenv.config
 const authRoutes = require('./routes/authRoutes');
 const albumRoutes = require('./routes/albumRoutes');
 const photoRoutes = require('./routes/photoRoutes');
@@ -19,7 +19,7 @@ const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 
 
-connectDB(); // 3️⃣ connect to MongoDB
+connectDB(); // connect to MongoDB
 
 const app = express();
 
