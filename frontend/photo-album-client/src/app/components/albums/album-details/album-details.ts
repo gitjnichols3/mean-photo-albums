@@ -32,23 +32,23 @@ export class AlbumDetailsComponent implements OnInit {
   isLoadingShare = false;
   copyStatus: 'idle' | 'copied' | 'error' = 'idle';
 
-  // Add event
+  // Add / edit event form state
   newEventName = '';
   newEventDate = '';
   newEventLocation = '';
   formError = '';
 
-  // Editing state
+  // When set, the event form is in "edit" mode instead of "add"
   editingEventId: string | null = null;
 
-  // Photos
+  // Photos for this album
   photos: Photo[] = [];
   isLoadingPhotos = false;
   photoError = '';
   isUploading = false;
   selectedFiles: FileList | null = null;
 
-  // Viewing selection (which event’s photos to show)
+  // Which event’s photos are currently being viewed
   selectedEventId: string | '' = '';
   selectedEventName = 'Select an event';
 
@@ -83,6 +83,7 @@ export class AlbumDetailsComponent implements OnInit {
     this.loadAlbum(id);
   }
 
+  // Load the album details first, then pull in the related photos
   private loadAlbum(id: string): void {
     this.isLoading = true;
     this.errorMessage = '';
@@ -92,7 +93,7 @@ export class AlbumDetailsComponent implements OnInit {
         this.album = album;
         this.isLoading = false;
 
-        // If the album already has a shareSlug, compute the share URL immediately
+        // If the album already has a public share slug, build the share URL up front
         if ((album as any).shareSlug) {
           this.shareSlug = (album as any).shareSlug;
           this.shareUrl = `${window.location.origin}/share/${this.shareSlug}`;
@@ -100,7 +101,7 @@ export class AlbumDetailsComponent implements OnInit {
 
         this.cdr.detectChanges();
 
-        // Once album is loaded, load its photos
+        // Once the album is in place, load all of its photos
         this.loadPhotos();
       },
       error: (err) => {
@@ -120,9 +121,11 @@ export class AlbumDetailsComponent implements OnInit {
   // ------------------------
   // TIMELINE: sorted + grouped
   // ------------------------
+
   /**
    * Parse an event date string into a local calendar Date.
    * Works for both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ".
+   * The goal is a stable calendar date regardless of timezone shifts.
    */
   private toLocalEventDate(value?: string | null): Date | null {
     if (!value) return null;
@@ -149,6 +152,7 @@ export class AlbumDetailsComponent implements OnInit {
     return new Date(yyyy, mm - 1, dd);
   }
 
+  // Events sorted chronologically so the timeline reads oldest → newest
   get sortedEvents(): any[] {
     if (!this.album?.events) return [];
 
@@ -176,6 +180,7 @@ export class AlbumDetailsComponent implements OnInit {
     return eventsCopy;
   }
 
+  // Group events by their calendar date for the timeline display
   get timelineGroups(): { dateLabel: string; events: any[] }[] {
     const groups: { dateLabel: string; events: any[] }[] = [];
     const map = new Map<string, any[]>();
@@ -211,21 +216,25 @@ export class AlbumDetailsComponent implements OnInit {
   // VIEW SELECTION
   // ------------------------
 
+  // Choose which event’s photos are shown in the main grid
   selectEventForViewing(ev: any): void {
     this.selectedEventId = ev.eventId;
     this.selectedEventName = ev.name || 'Selected event';
   }
 
+  // Switch back to unassigned photos
   clearEventSelection(): void {
     this.selectedEventId = '';
     this.selectedEventName = 'Unassigned photos';
   }
 
+  // Photos tied to the currently-selected event
   get selectedEventPhotos(): Photo[] {
     if (!this.selectedEventId) return [];
     return this.photos.filter((p) => p.eventId === this.selectedEventId);
   }
 
+  // Photos that are not assigned to any event
   get unassignedPhotos(): Photo[] {
     return this.photos.filter((p) => !p.eventId);
   }
@@ -234,6 +243,7 @@ export class AlbumDetailsComponent implements OnInit {
   // PHOTO VIEWER MODAL (LIGHTBOX)
   // ------------------------
 
+  // Open the lightbox starting at a specific photo index
   openPhotoViewer(startIndex: number): void {
     const baseList = this.selectedEventId
       ? this.selectedEventPhotos
@@ -305,6 +315,8 @@ export class AlbumDetailsComponent implements OnInit {
   // PHOTOS
   // ------------------------
 
+  // Pull all photos for this album and sort by "effective date"
+  // takenAt (EXIF) when available, otherwise uploadedAt
   private loadPhotos(): void {
     if (!this.album?._id) return;
 
@@ -313,7 +325,6 @@ export class AlbumDetailsComponent implements OnInit {
 
     this.photoService.getPhotosForAlbum(this.album._id).subscribe({
       next: (photos) => {
-        // Sort photos by "effective date": takenAt (EXIF) first, then uploadedAt
         this.photos = [...photos].sort((a, b) => {
           const aDate = a.takenAt
             ? new Date(a.takenAt as any)
@@ -346,7 +357,8 @@ export class AlbumDetailsComponent implements OnInit {
     });
   }
 
-      onChangePhotoEvent(photo: Photo, newEventId: string): void {
+  // Reassign a photo to a different event (or back to unassigned)
+  onChangePhotoEvent(photo: Photo, newEventId: string): void {
     // Empty string from the dropdown means "unassigned"
     const targetEventId: string | null = newEventId || null;
 
@@ -358,7 +370,7 @@ export class AlbumDetailsComponent implements OnInit {
 
     this.photoService.reassignPhoto(photo._id, targetEventId).subscribe({
       next: () => {
-        // Reload photos so the photo moves to the correct group
+        // Reload photos so the photo moves into the correct group
         this.loadPhotos();
       },
       error: (err) => {
@@ -369,13 +381,12 @@ export class AlbumDetailsComponent implements OnInit {
     });
   }
 
-
-
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.selectedFiles = input.files;
   }
 
+  // Batch upload all selected files for this album (optionally tied to the selected event)
   onUploadPhotos(event: Event): void {
     event.preventDefault();
 
@@ -444,6 +455,7 @@ export class AlbumDetailsComponent implements OnInit {
   // EVENTS
   // ------------------------
 
+  // Add a new event or save changes to the event currently being edited
   addEvent(): void {
     this.formError = '';
 
@@ -510,6 +522,7 @@ export class AlbumDetailsComponent implements OnInit {
     this.resetEventForm();
   }
 
+  // Clear the event form and exit edit mode
   private resetEventForm(): void {
     this.editingEventId = null;
     this.newEventName = '';
@@ -518,6 +531,7 @@ export class AlbumDetailsComponent implements OnInit {
     this.formError = '';
   }
 
+  // Simple prompt-based editing for existing events (name/date/location)
   editEvent(ev: any): void {
     if (!this.albumId || !ev.eventId) {
       return;
@@ -625,6 +639,7 @@ export class AlbumDetailsComponent implements OnInit {
   // SHARING
   // ------------------------
 
+  // Ask the backend for a share slug and construct the full public URL
   generateShareLink(): void {
     if (!this.album?._id) {
       return;
@@ -656,49 +671,50 @@ export class AlbumDetailsComponent implements OnInit {
     });
   }
 
- async copyShareUrl(): Promise<void> {
-  if (!this.shareUrl) return;
+  // Copy the share URL to the clipboard (with a fallback for older browsers)
+  async copyShareUrl(): Promise<void> {
+    if (!this.shareUrl) return;
 
-  try {
-    // Prefer modern clipboard API if available
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(this.shareUrl);
-      this.copyStatus = 'copied';
+    try {
+      // Prefer modern clipboard API if available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(this.shareUrl);
+        this.copyStatus = 'copied';
+        this.cdr.detectChanges();
+      } else {
+        // Fallback: use a temporary textarea + execCommand
+        const textarea = document.createElement('textarea');
+        textarea.value = this.shareUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        const successful = document.execCommand
+          ? document.execCommand('copy')
+          : false;
+
+        document.body.removeChild(textarea);
+
+        this.copyStatus = successful ? 'copied' : 'error';
+        this.cdr.detectChanges();
+      }
+
+      // Reset status after a short delay
+      setTimeout(() => {
+        this.copyStatus = 'idle';
+        this.cdr.detectChanges();
+      }, 2000);
+    } catch (err) {
+      console.error('[AlbumDetails] Clipboard error', err);
+      this.copyStatus = 'error';
       this.cdr.detectChanges();
-    } else {
-      // Fallback: use a temporary textarea + execCommand
-      const textarea = document.createElement('textarea');
-      textarea.value = this.shareUrl;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
 
-      const successful = document.execCommand
-        ? document.execCommand('copy')
-        : false;
-
-      document.body.removeChild(textarea);
-
-      this.copyStatus = successful ? 'copied' : 'error';
-      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.copyStatus = 'idle';
+        this.cdr.detectChanges();
+      }, 2000);
     }
-
-    // Reset status after a short delay
-    setTimeout(() => {
-      this.copyStatus = 'idle';
-      this.cdr.detectChanges();
-    }, 2000);
-  } catch (err) {
-    console.error('[AlbumDetails] Clipboard error', err);
-    this.copyStatus = 'error';
-    this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.copyStatus = 'idle';
-      this.cdr.detectChanges();
-    }, 2000);
   }
-}
 }

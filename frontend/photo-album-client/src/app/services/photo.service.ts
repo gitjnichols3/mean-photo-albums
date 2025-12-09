@@ -17,6 +17,7 @@ interface UploadPhotoResponse {
   providedIn: 'root',
 })
 export class PhotoService {
+  // Base URL for all photo-related API calls
   private baseUrl = `${environment.apiBaseUrl}/photos`;
 
   constructor(
@@ -24,7 +25,7 @@ export class PhotoService {
     private authService: AuthService
   ) {}
 
-  // Build headers with JWT if available
+  // Build headers for authenticated requests (no Content-Type here so FormData can set it)
   private getAuthHeaders(): HttpHeaders {
     let headers = new HttpHeaders();
 
@@ -36,6 +37,7 @@ export class PhotoService {
     return headers;
   }
 
+  // Upload a single photo file for an album (optionally tied to a specific event)
   uploadPhoto(
     albumId: string,
     file: File,
@@ -55,6 +57,7 @@ export class PhotoService {
       .pipe(map((res) => res.photo));
   }
 
+  // Load all photos for a given album from the backend
   getPhotosForAlbum(albumId: string): Observable<Photo[]> {
     return this.http
       .get<{ photos: Photo[] }>(
@@ -64,7 +67,7 @@ export class PhotoService {
       .pipe(map((res) => res.photos));
   }
 
-
+  // Delete a single photo by id
   deletePhoto(photoId: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${this.baseUrl}/${photoId}`,
@@ -72,16 +75,14 @@ export class PhotoService {
     );
   }
 
-// Example: adjust to match your existing service
-reassignPhoto(photoId: string, eventId: string | null) {
-  const body = { eventId };
+  // Reassign a photo to a different event, or clear the event assignment
+  reassignPhoto(photoId: string, eventId: string | null) {
+    const body = { eventId };
 
-  return this.http.patch<any>(
-    `${environment.apiBaseUrl}/photos/${photoId}/event`,
-    body,
-    { headers: this.getAuthHeaders() }
-  );
-}
-
-
+    return this.http.patch<any>(
+      `${environment.apiBaseUrl}/photos/${photoId}/event`,
+      body,
+      { headers: this.getAuthHeaders() }
+    );
+  }
 }

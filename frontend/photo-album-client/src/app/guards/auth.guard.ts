@@ -11,6 +11,7 @@ export class AuthGuard implements CanActivate {
     private router: Router
   ) {}
 
+  // Blocks access to protected routes unless a valid login token exists
   canActivate(): boolean {
     const token = this.authService.getToken();
 
@@ -18,7 +19,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    // Not logged in → redirect to login
+    // Not authenticated → send user back to the login screen
     this.router.navigate(['/login']);
     return false;
   }

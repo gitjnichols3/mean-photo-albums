@@ -4,7 +4,7 @@ const exifr = require('exifr');
 const Photo = require('../models/Photo');
 const Album = require('../models/Album');
 
-// Small helper to guard against missing auth (same pattern as albumController)
+// Ensure the request is associated with an authenticated user
 function ensureUser(req, res) {
   if (!req.user || !req.user.id) {
     res.status(401).json({ message: 'Not authenticated' });
@@ -13,24 +13,24 @@ function ensureUser(req, res) {
   return true;
 }
 
-// POST /api/photos/upload (or whatever route you wired)
+// POST /api/photos/upload
 const uploadPhoto = async (req, res, next) => {
-  // Auth guard
   if (!ensureUser(req, res)) return;
 
   try {
     const { albumId, eventId } = req.body;
 
-    // Validate request
+    // An albumId is required to associate the uploaded photo
     if (!albumId) {
       return res.status(400).json({ message: 'albumId is required' });
     }
 
+    // A file must be attached to the request
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Check album ownership
+    // Confirm the album belongs to the authenticated user
     const album = await Album.findOne({
       _id: albumId,
       ownerId: req.user.id
@@ -42,7 +42,7 @@ const uploadPhoto = async (req, res, next) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
-    // Try to read EXIF "taken at" date from the uploaded file
+    // Attempt to extract the original "date taken" from the photo's EXIF metadata
     let takenAt = null;
     try {
       const filePath = path.join(
@@ -56,7 +56,7 @@ const uploadPhoto = async (req, res, next) => {
       const exif = await exifr.parse(filePath);
 
       if (exif) {
-        // Common EXIF date fields: DateTimeOriginal or CreateDate
+        // Prefer DateTimeOriginal, with CreateDate as a fallback
         takenAt = exif.DateTimeOriginal || exif.CreateDate || null;
       }
     } catch (exifErr) {
@@ -65,17 +65,17 @@ const uploadPhoto = async (req, res, next) => {
         req.file?.filename,
         exifErr?.message || exifErr
       );
-      // Silently fall back to uploadedAt
+      // If EXIF data is unavailable, fall back to the upload timestamp
     }
 
-    // Build the photo document
+    // Build the photo document for MongoDB
     const photo = new Photo({
       albumId,
       eventId: eventId || null,
       photographerId: req.user.id,
-      originalUrl: `/uploads/${req.file.filename}`, // public serving path
+      originalUrl: `/uploads/${req.file.filename}`, // public-serving file path
       uploadedAt: new Date(),
-      takenAt: takenAt || null // if EXIF found, use it; else remain null
+      takenAt: takenAt || null
     });
 
     await photo.save();
@@ -89,9 +89,8 @@ const uploadPhoto = async (req, res, next) => {
   }
 };
 
-// GET /api/photos/album/:albumId (or similar)
+// GET /api/photos/album/:albumId
 const getPhotosForAlbum = async (req, res, next) => {
-  // Auth guard
   if (!ensureUser(req, res)) return;
 
   try {
@@ -101,7 +100,7 @@ const getPhotosForAlbum = async (req, res, next) => {
       return res.status(400).json({ message: 'albumId is required' });
     }
 
-    // Make sure the album belongs to the logged-in user
+    // Verify the album belongs to the current user before returning photos
     const album = await Album.findOne({
       _id: albumId,
       ownerId: req.user.id
@@ -113,8 +112,7 @@ const getPhotosForAlbum = async (req, res, next) => {
         .json({ message: 'Album not found or not authorized' });
     }
 
-    // You might later decide to sort by takenAt if present;
-    // for now we keep uploadedAt for consistency.
+    // Photos are currently sorted by upload time for consistent ordering
     const photos = await Photo.find({ albumId }).sort({ uploadedAt: 1 });
 
     return res.json({ photos });
@@ -125,7 +123,6 @@ const getPhotosForAlbum = async (req, res, next) => {
 
 // DELETE /api/photos/:photoId
 const deletePhoto = async (req, res, next) => {
-  // Auth guard
   if (!ensureUser(req, res)) return;
 
   try {
@@ -141,7 +138,7 @@ const deletePhoto = async (req, res, next) => {
       return res.status(404).json({ message: 'Photo not found' });
     }
 
-    // Make sure the album belongs to this user
+    // Verify that the photo's album belongs to the authenticated user
     const album = await Album.findOne({
       _id: photo.albumId,
       ownerId: req.user.id
@@ -153,7 +150,7 @@ const deletePhoto = async (req, res, next) => {
         .json({ message: 'Not authorized to delete this photo' });
     }
 
-    // Build file path
+    // Build the absolute file system path to the image
     const filePath = path.join(
       __dirname,
       '..',
@@ -162,17 +159,17 @@ const deletePhoto = async (req, res, next) => {
       path.basename(photo.originalUrl)
     );
 
-    // Delete file from disk if it exists
+    // Remove the physical file from disk if it still exists
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
-    // Delete from database
+    // Remove the photo record from the database
     await photo.deleteOne();
 
     return res.json({ message: 'Photo deleted successfully' });
   } catch (err) {
-    // Invalid ObjectId etc. will bubble to errorHandler
+    // Invalid ObjectId and other database errors are handled by the global error handler
     return next(err);
   }
 };

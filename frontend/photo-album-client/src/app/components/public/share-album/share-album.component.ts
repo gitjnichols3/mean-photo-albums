@@ -37,6 +37,7 @@ interface PublicAlbum {
   templateUrl: './share-album.component.html',
 })
 export class ShareAlbumComponent implements OnInit {
+  // Shared album and photos loaded by a public slug (no login required)
   album: PublicAlbum | null = null;
   photos: Photo[] = [];
 
@@ -72,6 +73,7 @@ export class ShareAlbumComponent implements OnInit {
       return;
     }
 
+    // Public endpoint on the backend that returns album + photos by share slug
     const url = `${environment.apiBaseUrl}/public/albums/${slug}`;
     console.log('[ShareAlbum] GET', url);
 
@@ -101,7 +103,8 @@ export class ShareAlbumComponent implements OnInit {
 
   /**
    * Parse an event date string into a local calendar Date.
-   * Works for both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ".
+   * Handles both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss.sssZ"
+   * so the shared timeline matches the owner’s view.
    */
   private toLocalEventDate(value?: string | null): Date | null {
     if (!value) return null;
@@ -120,12 +123,13 @@ export class ShareAlbumComponent implements OnInit {
       return null;
     }
 
-    // Local date with correct calendar day
+    // Local date with the correct calendar day
     return new Date(yyyy, mm - 1, dd);
   }
 
   // --- Timeline helpers ---
 
+  // Events sorted by date so the public timeline reads oldest → newest
   get sortedEvents(): PublicEvent[] {
     if (!this.album?.events) return [];
 
@@ -145,7 +149,7 @@ export class ShareAlbumComponent implements OnInit {
         return aTime - bTime; // oldest first
       }
       if (aHasDate && !bHasDate) return -1; // dated before undated
-      if (!aHasDate && bHasDate) return 1; // undated after dated
+      if (!aHasDate && bHasDate) return 1;  // undated after dated
 
       return 0;
     });
@@ -153,6 +157,7 @@ export class ShareAlbumComponent implements OnInit {
     return eventsCopy;
   }
 
+  // Group events by calendar date for the shared timeline UI
   get timelineGroups(): { dateLabel: string; events: PublicEvent[] }[] {
     const groups: { dateLabel: string; events: PublicEvent[] }[] = [];
     const map = new Map<string, PublicEvent[]>();
@@ -186,6 +191,7 @@ export class ShareAlbumComponent implements OnInit {
 
   // --- Selection ---
 
+  // Choose which event’s photos are displayed in the right-hand grid
   selectEvent(ev: PublicEvent): void {
     this.selectedEventId = ev.eventId;
     this.selectedEventName = ev.name || 'Selected event';
@@ -196,6 +202,7 @@ export class ShareAlbumComponent implements OnInit {
     this.viewerIndex = 0;
   }
 
+  // Show unassigned photos instead of a specific event
   clearEventSelection(): void {
     this.selectedEventId = '';
     this.selectedEventName = 'Unassigned photos';
@@ -225,6 +232,7 @@ export class ShareAlbumComponent implements OnInit {
   // PHOTO VIEWER MODAL (LIGHTBOX)
   // ------------------------
 
+  // Open the lightbox for the current list (event or unassigned)
   openPhotoViewer(startIndex: number): void {
     const baseList = this.selectedEventId
       ? this.selectedEventPhotos
@@ -293,8 +301,8 @@ export class ShareAlbumComponent implements OnInit {
 
   // --- Photo time + sorted lists for events/unassigned ---
 
+  // Pick a consistent "effective time" for a photo: EXIF first, then created/uploaded
   private getPhotoTime(p: any): number {
-    // Prefer takenAt (from EXIF) if present, otherwise fall back
     const source = p?.takenAt || p?.createdAt || p?.uploadedAt || null;
 
     if (!source) return 0;
@@ -304,6 +312,7 @@ export class ShareAlbumComponent implements OnInit {
     return Number.isNaN(t) ? 0 : t;
   }
 
+  // Photos for a specific event, oldest → newest
   getPhotosForEvent(eventId: string): Photo[] {
     if (!this.photos || !Array.isArray(this.photos)) {
       return [];
@@ -318,6 +327,7 @@ export class ShareAlbumComponent implements OnInit {
     });
   }
 
+  // Photos with no event assignment, oldest → newest
   getUnassignedPhotos(): Photo[] {
     if (!this.photos || !Array.isArray(this.photos)) {
       return [];

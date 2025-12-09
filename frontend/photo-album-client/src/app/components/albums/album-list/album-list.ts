@@ -18,6 +18,7 @@ import { AuthService } from '../../../services/auth.service';
   styleUrl: './album-list.css',
 })
 export class AlbumList implements OnInit {
+  // Stream of albums for the current user; bound with async pipe in the template
   albums$!: Observable<Album[]>;
   errorMessage = '';
 
@@ -27,36 +28,35 @@ export class AlbumList implements OnInit {
     private authService: AuthService
   ) {}
 
-get username(): string {
-  const user = this.authService.getCurrentUser?.();
+  // Friendly name for the greeting in the header
+  get username(): string {
+    const user = this.authService.getCurrentUser?.();
 
-  if (!user) {
-    return 'there';
+    if (!user) {
+      return 'there';
+    }
+
+    // Try common property names safely
+    const name =
+      user.firstName ||
+      user.name ||
+      user.username ||
+      user.email ||
+      '';
+
+    if (!name) {
+      return 'there';
+    }
+
+    // Return first word only (first name)
+    return name.split(' ')[0];
   }
-
-  // Try common property names safely
-  const name =
-    user.firstName ||
-    user.name ||
-    user.username ||
-    user.email ||
-    '';
-
-  if (!name) {
-    return 'there';
-  }
-
-  // Return first word only (first name)
-  return name.split(' ')[0];
-}
-
-
-
 
   ngOnInit(): void {
     this.loadAlbums();
   }
 
+  // Pull albums from the API and handle errors by falling back to an empty list
   loadAlbums(): void {
     this.errorMessage = '';
 
@@ -76,6 +76,7 @@ get username(): string {
     this.router.navigate(['/albums', albumId]);
   }
 
+  // Confirm and delete an album, then refresh the page so the list stays in sync
   deleteAlbum(album: Album): void {
     const confirmed = window.confirm(
       `Delete album "${album.title}" and all of its events and photos?`
@@ -88,7 +89,7 @@ get username(): string {
     this.albumService.deleteAlbum(album._id).subscribe({
       next: () => {
         console.log('[AlbumList] deleteAlbum success for', album._id);
-        // Blunt but reliable: reload the page so the list re-fetches from backend
+        // Simple refresh to trigger a new fetch from the backend
         window.location.reload();
       },
       error: (err) => {

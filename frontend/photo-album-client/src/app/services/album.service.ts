@@ -12,6 +12,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class AlbumService {
+  // Base URL for all album-related API calls
   private baseUrl = `${environment.apiBaseUrl}/albums`;
 
   constructor(
@@ -19,10 +20,10 @@ export class AlbumService {
     private authService: AuthService
   ) {}
 
+  // Build headers for authenticated requests to the album API
   private getAuthHeaders(): HttpHeaders {
     let headers = new HttpHeaders().set('Content-Type', 'application/json');
 
-    // Make absolutely sure this never throws synchronously
     try {
       const token = this.authService?.getToken?.();
       if (token) {
@@ -68,6 +69,7 @@ export class AlbumService {
   }
 
   // GET /api/albums/:id
+  // Handles both { album: {...} } and a plain album object
   getAlbumById(id: string): Observable<Album> {
     console.log('[AlbumService] getAlbumById() called. id =', id);
     return this.http.get<any>(`${this.baseUrl}/${id}`, {
@@ -75,7 +77,6 @@ export class AlbumService {
     }).pipe(
       map(res => {
         console.log('[AlbumService] Raw response from /albums/:id:', res);
-        // Handle both { album: {...} } and plain album object
         if (res && res.album) {
           return res.album as Album;
         }
@@ -108,7 +109,7 @@ export class AlbumService {
 
   /**
    * DELETE /api/albums/:id
-   * Deletes an album and returns result
+   * Deletes an album and returns the API result
    */
   deleteAlbum(id: string): Observable<any> {
     console.log('[AlbumService] deleteAlbum() id =', id);
@@ -218,6 +219,7 @@ export class AlbumService {
   }
 
   // PUT /api/albums/:id
+  // Partial update for the album (title/description, etc.)
   updateAlbum(id: string, update: Partial<Album>): Observable<Album> {
     console.log(
       '[AlbumService] updateAlbum() called. id =',
@@ -244,7 +246,8 @@ export class AlbumService {
       );
   }
 
-  // Create or fetch the shareSlug for an album
+  // POST /api/albums/:id/share
+  // Ask the backend for a share slug so we can build a public /share/:slug URL
   getShareLink(albumId: string) {
     return this.http.post<{ shareSlug: string }>(
       `${this.baseUrl}/${albumId}/share`,
