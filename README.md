@@ -4,12 +4,13 @@ Project overview
     This project is a full-stack photo album web application built with the MEAN stack (MongoDB, Express, Angular, and Node.js). Users can create photo albums, organize photos by events, upload images, and share public, read-only album links. The purpose of this project was to build a complete end-to-end web application that demonstrates full-stack development skills including authentication, API development, database design, file uploads, and frontend UI integration.
 
 Prerequisites
-    You will need the following installed before running this project:
-    - Node.js v18 or newer recommended
-    - Angular CLI v17 or newer
-    - MongoDB (local install or MongoDB Atlas account)
-    - Git (optional but recommended)
-    Note: Express does NOT need to be installed separately. It is included automatically when you run "npm install" in the backend folder because it is listed in package.json.
+
+You will need the following installed before running this project:
+- Node.js v18 or newer recommended
+- Angular CLI v17 or newer
+- MongoDB (local install or MongoDB Atlas account)
+- Git (optional but recommended)
+Note: Express does NOT need to be installed separately. It is included automatically when you run "npm install" in the backend folder because it is listed in package.json.
 
 
 Backend setup (Node, Express, MongoDB) -
@@ -58,19 +59,20 @@ Frontend setup (Angular)
 
 
 Running the full application
-    To run the full application locally:
-    1. Start MongoDB (if using a local instance)
-    2. Start the backend server on port 3000
-    3. Start the frontend Angular server on port 4200
-    4. Open your browser to http://localhost:4200
+
+To run the full application locally:
+1. Start MongoDB (if using a local instance)
+2. Start the backend server on port 3000
+3. Start the frontend Angular server on port 4200
+4. Open your browser to http://localhost:4200
 
 Notes
-    - Both the backend and frontend servers must be running at the same time
-    - If you get CORS or API errors, check that:
-        - The backend is running
-        - The API URL matches the backend port
-        - Your .env file is configured correctly
-    If file uploads do not work, make sure the uploads folder exists at this exact path: backend/uploads. If it does not exist, create a folder named "uploads" directly inside the backend folder
+- Both the backend and frontend servers must be running at the same time
+- If you get CORS or API errors, check that:
+    - The backend is running
+    - The API URL matches the backend port
+    - Your .env file is configured correctly
+- If file uploads do not work, make sure the uploads folder exists at this exact path: backend/uploads. If it does not exist, create a folder named "uploads" directly inside the backend folder
 
 If you follow the steps in this README, you should be able to run this application locally without any additional setup.
 
